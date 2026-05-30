@@ -385,10 +385,12 @@
     border-radius: 8px;
     border: 1px solid var(--border-strong);
     background: var(--surface);
+    color: var(--text);
     font-family: inherit;
     font-size: 14px;
     margin-bottom: 12px;
   }
+  .picker-search::placeholder { color: var(--muted); }
   .picker-search:focus { outline: none; border-color: var(--accent); }
   .picker-list {
     max-height: 360px;
@@ -737,9 +739,11 @@
     border-radius: 8px;
     border: 1px solid var(--border-strong);
     background: var(--surface);
+    color: var(--text);
     font-family: inherit;
     font-size: 14px;
   }
+  .scan-row input::placeholder { color: var(--muted); }
   .scan-hint {
     font-size: 12px;
     color: var(--muted);
@@ -1166,7 +1170,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.2.0';
+const VERSION = 'v1.3.1';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
@@ -1315,51 +1319,170 @@ function toast(msg) {
 }
 
 /* ============ API LOOKUP ============ */
-// Tries Google Books first, then Open Library as fallback
+// Queries Google Books, Open Library and lobid.org (German library index)
+// in parallel for the given ISBN; if nothing matches, retries with the
+// alternate ISBN-10/13 format. Results from all hits are merged so that
+// missing fields in one source are filled from another.
 async function lookupIsbn(isbn) {
   const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
   if (cleanIsbn.length < 10) throw new Error('ISBN zu kurz');
 
-  // Google Books
-  try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-    const data = await r.json();
-    if (data.totalItems > 0) {
-      const v = data.items[0].volumeInfo;
-      return {
-        title: v.title || '',
-        author: (v.authors || []).join(', '),
-        genre: (v.categories || [])[0] || '',
-        pages: v.pageCount || '',
-        language: langName(v.language) || '',
-        cover: v.imageLinks ? (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || '').replace('http:', 'https:') : '',
-        isbn: cleanIsbn,
-        notes: v.description ? v.description.slice(0, 500) : ''
-      };
-    }
-  } catch (e) { /* fallthrough */ }
+  // Try primary ISBN against all sources in parallel
+  let results = await queryAllSources(cleanIsbn);
 
-  // Open Library fallback
-  try {
-    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
-    const data = await r.json();
-    const k = `ISBN:${cleanIsbn}`;
-    if (data[k]) {
-      const v = data[k];
-      return {
-        title: v.title || '',
-        author: (v.authors || []).map(a => a.name).join(', '),
-        genre: (v.subjects || [])[0]?.name || '',
-        pages: v.number_of_pages || '',
-        language: '',
-        cover: v.cover?.large || v.cover?.medium || '',
-        isbn: cleanIsbn,
-        notes: ''
-      };
-    }
-  } catch (e) { /* fallthrough */ }
+  // If nothing found, try alternate ISBN format (10↔13)
+  if (results.length === 0) {
+    const alt = convertIsbn(cleanIsbn);
+    if (alt) results = await queryAllSources(alt);
+  }
 
-  throw new Error('Kein Treffer für diese ISBN');
+  if (results.length === 0) throw new Error('Kein Treffer für diese ISBN');
+  return mergeResults(results, cleanIsbn);
+}
+
+async function queryAllSources(isbn) {
+  const r = await Promise.allSettled([
+    fetchGoogleBooks(isbn),
+    fetchOpenLibrary(isbn),
+    fetchLobid(isbn)
+  ]);
+  return r.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
+}
+
+// Merge: sort by completeness, take most complete as base, fill missing
+// fields from the others (so cover from Google + pages from lobid etc).
+function mergeResults(results, originalIsbn) {
+  const score = obj => Object.values(obj).filter(v => v && String(v).trim()).length;
+  results.sort((a, b) => score(b) - score(a));
+  const merged = { ...results[0] };
+  for (let i = 1; i < results.length; i++) {
+    for (const [k, v] of Object.entries(results[i])) {
+      if ((!merged[k] || String(merged[k]).trim() === '') && v) merged[k] = v;
+    }
+  }
+  // Keep the ISBN the user actually entered
+  merged.isbn = originalIsbn;
+  return merged;
+}
+
+// Convert ISBN-10 ↔ ISBN-13 with proper check digit recalculation
+function convertIsbn(isbn) {
+  if (isbn.length === 10) {
+    // ISBN-10 → ISBN-13: prefix "978", recompute check digit
+    const body = '978' + isbn.substring(0, 9);
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += parseInt(body[i]) * (i % 2 === 0 ? 1 : 3);
+    return body + ((10 - (sum % 10)) % 10);
+  }
+  if (isbn.length === 13 && isbn.startsWith('978')) {
+    // ISBN-13 → ISBN-10: drop "978" prefix, recompute check digit
+    const core = isbn.substring(3, 12);
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(core[i]) * (10 - i);
+    const v = (11 - (sum % 11)) % 11;
+    return core + (v === 10 ? 'X' : String(v));
+  }
+  return null;
+}
+
+async function fetchGoogleBooks(isbn) {
+  try {
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.totalItems || !data.items) return null;
+    const v = data.items[0].volumeInfo || {};
+    return {
+      title: v.title || '',
+      author: (v.authors || []).join(', '),
+      genre: (v.categories || [])[0] || '',
+      pages: v.pageCount || '',
+      language: langName(v.language),
+      cover: v.imageLinks
+        ? (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || '').replace('http:', 'https:')
+        : '',
+      isbn,
+      notes: v.description ? v.description.slice(0, 500) : ''
+    };
+  } catch (e) { return null; }
+}
+
+async function fetchOpenLibrary(isbn) {
+  try {
+    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const v = data[`ISBN:${isbn}`];
+    if (!v) return null;
+    return {
+      title: v.title || '',
+      author: (v.authors || []).map(a => a.name).filter(Boolean).join(', '),
+      genre: (v.subjects && v.subjects[0]?.name) || '',
+      pages: v.number_of_pages || '',
+      language: '',
+      cover: (v.cover && (v.cover.large || v.cover.medium)) || '',
+      isbn,
+      notes: ''
+    };
+  } catch (e) { return null; }
+}
+
+// lobid.org — deutscher Bibliotheksverbund-Index (hbz). Hervorragend für
+// deutsche Bücher, hat oft auch die englischen. CORS ist aktiviert.
+async function fetchLobid(isbn) {
+  try {
+    const r = await fetch(`https://lobid.org/resources/search?q=isbn:${isbn}&format=json&size=1`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.member || data.member.length === 0) return null;
+    const v = data.member[0];
+
+    // Title (+ subtitle if present)
+    let title = v.title || '';
+    if (v.otherTitleInformation && v.otherTitleInformation.length) {
+      title += ' – ' + v.otherTitleInformation[0];
+    } else if (v.subtitle) {
+      title += ' – ' + v.subtitle;
+    }
+
+    // Authors: only main creators, not editors/translators
+    const authors = (v.contribution || [])
+      .filter(c => {
+        if (!c.role || !c.role.length) return true;
+        const rid = (c.role[0].id || c.role[0].label || '').toLowerCase();
+        return !rid.includes('editor') && !rid.includes('translator')
+            && !rid.includes('illustrator');
+      })
+      .map(c => c.agent && c.agent.label)
+      .filter(Boolean)
+      .join(', ');
+
+    // Pages from "extent" (e.g. "480 Seiten" / "480 S.")
+    let pages = '';
+    if (v.extent && v.extent.length) {
+      const m = String(v.extent[0]).match(/(\d{2,4})/);
+      if (m) pages = m[1];
+    }
+
+    // Language
+    let language = '';
+    if (v.language && v.language.length) {
+      const label = (v.language[0].label || v.language[0].id || '').toLowerCase();
+      if (label.includes('deutsch') || label.includes('german') || label.endsWith('/ger') || label.endsWith('/deu')) language = 'Deutsch';
+      else if (label.includes('englisch') || label.includes('english') || label.endsWith('/eng')) language = 'Englisch';
+    }
+
+    return {
+      title,
+      author: authors,
+      genre: '',     // lobid subjects are usually GND identifiers, not friendly names
+      pages,
+      language,
+      cover: '',
+      isbn,
+      notes: (v.abstract && v.abstract[0]?.label) ? String(v.abstract[0].label).slice(0, 500) : ''
+    };
+  } catch (e) { return null; }
 }
 
 function langName(code) {
