@@ -1170,7 +1170,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.3.1';
+const VERSION = 'v1.3.2';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
@@ -1341,12 +1341,62 @@ async function lookupIsbn(isbn) {
 }
 
 async function queryAllSources(isbn) {
-  const r = await Promise.allSettled([
-    fetchGoogleBooks(isbn),
-    fetchOpenLibrary(isbn),
-    fetchLobid(isbn)
-  ]);
-  return r.filter(x => x.status === 'fulfilled' && x.value).map(x => x.value);
+  // Tuning:
+  // - SOURCE_TIMEOUT: how long we wait at most for a single API.
+  // - MERGE_WINDOW: after the first success, how long we still wait for
+  //   slower sources so we can merge fields. Keep this short — users feel
+  //   anything under ~1s as instant.
+  // - HARD_TIMEOUT: absolute upper bound, even if no source succeeded.
+  const SOURCE_TIMEOUT = 4000;
+  const MERGE_WINDOW   = 500;
+  const HARD_TIMEOUT   = 4500;
+
+  const sources = [
+    withTimeout(fetchGoogleBooks(isbn), SOURCE_TIMEOUT),
+    withTimeout(fetchOpenLibrary(isbn), SOURCE_TIMEOUT),
+    withTimeout(fetchLobid(isbn),       SOURCE_TIMEOUT)
+  ];
+
+  return new Promise(resolve => {
+    const results = [];
+    let done = false;
+    let mergeTimer = null;
+    let pending = sources.length;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(mergeTimer);
+      clearTimeout(hardTimer);
+      resolve(results);
+    };
+
+    sources.forEach(p => {
+      p.then(r => {
+        if (done || !r) return;
+        results.push(r);
+        if (results.length === 1) {
+          // First result in — give the slower sources a brief window
+          mergeTimer = setTimeout(finish, MERGE_WINDOW);
+        }
+      }).catch(() => {}).finally(() => {
+        pending--;
+        if (pending === 0) finish();   // all sources are done
+      });
+    });
+
+    const hardTimer = setTimeout(finish, HARD_TIMEOUT);
+  });
+}
+
+// Wrap a promise so it resolves to null instead of hanging past `ms`
+function withTimeout(promise, ms) {
+  return new Promise(resolve => {
+    let settled = false;
+    const t = setTimeout(() => { if (!settled) { settled = true; resolve(null); } }, ms);
+    promise.then(v => { if (!settled) { settled = true; clearTimeout(t); resolve(v); } },
+                 () => { if (!settled) { settled = true; clearTimeout(t); resolve(null); } });
+  });
 }
 
 // Merge: sort by completeness, take most complete as base, fill missing
