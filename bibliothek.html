@@ -58,12 +58,125 @@
   }
 
   .container {
-    max-width: 1180px;
+    max-width: 1280px;
     margin: 0 auto;
     padding: 0 20px;
     position: relative;
     z-index: 1;
   }
+
+  /* APP LAYOUT — desktop sidebar + main */
+  .app-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 28px;
+    align-items: start;
+    padding-top: 24px;
+  }
+  .sidebar {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    border-right: 1px solid var(--border);
+    padding-right: 22px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .brand-sidebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Responsive helper classes */
+  .mobile-only { display: none !important; }
+  @media (max-width: 899px) {
+    .mobile-only { display: inline-flex !important; }
+    .desktop-only { display: none !important; }
+  }
+
+  .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-label .filter-badge {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    min-width: 16px;
+    text-align: center;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-foot .sync-pill { align-self: flex-start; }
+  .sidebar-foot .version {
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* MAIN AREA */
+  .main {
+    min-width: 0;  /* lets grid children shrink properly */
+  }
+  .main-head {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 22px;
+  }
+  .main-head .search-wrap {
+    flex: 1;
+    max-width: 480px;
+  }
+  .main-head .main-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .filter-toggle-mobile { display: none; }
+
+  .list-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 22px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--text);
+  }
+  .list-head .result-info { margin: 0; }
 
   /* HEADER */
   header {
@@ -189,7 +302,7 @@
   .sync-pill.keyneeded .dot-s { background: #fcd34d; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-  /* TABS */
+  /* TABS — default (mobile) is horizontal pills */
   .tabs {
     display: flex;
     gap: 4px;
@@ -223,20 +336,67 @@
     font-size: 11px;
     font-weight: 600;
   }
+  .tab .tab-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tab .tab-dot.s-all { background: var(--muted); }
+  .tab .tab-dot.s-reading { background: var(--orange); }
+  .tab .tab-dot.s-read { background: var(--green); }
+  .tab .tab-dot.s-unread { background: var(--purple); }
+  .tab .tab-dot.s-wishlist { background: var(--grey); }
+  .tab .tab-dot.s-dropped { background: var(--red); }
+
   .tab.active {
     color: var(--on-accent);
     border-color: var(--accent);
     background: var(--accent);
   }
   .tab.active .count {
-    background: rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.18);
     color: var(--on-accent);
   }
-  .tab.active[data-status="reading"] { background: var(--orange); border-color: var(--orange); }
-  .tab.active[data-status="read"] { background: var(--green); border-color: var(--green); }
-  .tab.active[data-status="unread"] { background: var(--purple); border-color: var(--purple); }
-  .tab.active[data-status="wishlist"] { background: var(--grey); border-color: var(--grey); }
-  .tab.active[data-status="dropped"] { background: var(--red); border-color: var(--red); }
+
+  /* TABS IN SIDEBAR — vertical full-width nav items on desktop */
+  @media (min-width: 900px) {
+    .sidebar .tabs {
+      flex-direction: column;
+      gap: 1px;
+      overflow: visible;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .sidebar .tab {
+      width: 100%;
+      border-radius: 8px;
+      border-color: transparent;
+      background: transparent;
+      padding: 8px 10px;
+      justify-content: flex-start;
+      color: var(--text);
+    }
+    .sidebar .tab:hover {
+      background: var(--accent-soft);
+    }
+    .sidebar .tab .count {
+      margin-left: auto;
+      background: transparent;
+      color: var(--muted);
+      padding: 0;
+      font-size: 12px;
+    }
+    .sidebar .tab.active {
+      background: var(--accent);
+      color: var(--on-accent);
+      border-color: var(--accent);
+    }
+    .sidebar .tab.active .count {
+      color: var(--on-accent);
+      opacity: 0.75;
+    }
+  }
 
   /* ALS NÄCHSTES LESEN */
   .nextup {
@@ -527,6 +687,38 @@
     margin-top: 12px;
   }
 
+  /* FILTERS IN SIDEBAR — always shown, no box styling on desktop */
+  @media (min-width: 900px) {
+    .sidebar .filter-panel {
+      display: block;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sidebar .filter-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .sidebar .filter-field label {
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+    .sidebar .filter-field select {
+      padding: 7px 9px;
+      font-size: 13px;
+    }
+    .sidebar .filter-actions {
+      justify-content: flex-start;
+      margin-top: 8px;
+    }
+    .sidebar .filter-actions .btn {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+  }
+
   /* RESULT INFO */
   .result-info {
     color: var(--muted);
@@ -536,10 +728,83 @@
 
   /* BOOK LIST (Hauptansicht) */
   .grid {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
   }
+  @media (max-width: 899px) {
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+  }
+
+  /* MOBILE LAYOUT — flatten sidebar/main with display:contents and reorder */
+  @media (max-width: 899px) {
+    .container {
+      overflow-x: hidden;  /* safety net for any stray overflow */
+    }
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      padding-top: 14px;
+      gap: 0;
+    }
+    .sidebar {
+      display: contents;
+    }
+    .main {
+      display: contents;
+    }
+    .sidebar-foot { display: none; }
+
+    /* Every direct logical child must allow shrinking below content width
+       so things like the horizontally-scrolling tabs don't widen the page.
+       Also force width: 100% because align-items: stretch isn't reliably
+       propagated to "grandchild" elements through display: contents. */
+    .brand-sidebar,
+    .sidebar-section,
+    .main-head,
+    .nextup,
+    .list-head,
+    #grid {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .brand-sidebar {
+      order: 0;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+    }
+
+    /* Mobile order: brand, tabs, main-head, filter (collapsible), nextup, list */
+    .sidebar-section-tabs   { order: 1; margin-bottom: 14px; }
+    .main-head              { order: 2; margin-bottom: 14px; }
+    .sidebar-section-filter { order: 3; }
+    #nextup                 { order: 4; }
+    .list-head              { order: 5; }
+    #grid                   { order: 6; }
+
+    .sidebar-section-filter > .section-label { display: none; }
+
+    .main-head {
+      flex-wrap: wrap;
+    }
+    .main-head .search-wrap {
+      flex: 1 1 100%;
+      max-width: none;
+    }
+    .main-head .main-actions {
+      width: 100%;
+      flex-wrap: wrap;
+      margin-left: 0;
+    }
+    .main-head .main-actions .btn { flex: 1; min-width: 0; justify-content: center; }
+  }
+
 
   .book-row {
     background: var(--surface);
@@ -864,109 +1129,143 @@
 
 <div class="container">
 
-  <header>
-    <div class="header-row">
-      <div class="brand">
-        <div class="brand-mark">B</div>
-        <div>
-          <div class="brand-title">Meine Bibliothek</div>
-          <div class="brand-sub">
-            <span id="brand-sub">0 Bücher</span>
-            <span class="version" id="version"></span>
+  <div class="app-layout">
+
+    <aside class="sidebar">
+
+      <!-- Brand (top of sidebar on desktop / top of mobile flow) -->
+      <div class="brand-sidebar">
+        <div class="brand">
+          <div class="brand-mark">B</div>
+          <div>
+            <div class="brand-title">Bibliothek</div>
+            <div class="brand-sub">
+              <span id="brand-sub">0 Bücher</span>
+            </div>
+          </div>
+        </div>
+        <!-- Sync pill visible only on mobile (desktop has it in sidebar-foot) -->
+        <button class="sync-pill mobile-only" title="Cloud-Sync">
+          <span class="dot-s"></span>
+          <span data-sync-label>Lokal</span>
+        </button>
+      </div>
+
+      <!-- Status navigation -->
+      <div class="sidebar-section sidebar-section-tabs">
+        <div class="section-label">Status</div>
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-status="all"><span class="tab-dot s-all"></span>Alle<span class="count" id="count-all">0</span></button>
+          <button class="tab" data-status="reading"><span class="tab-dot s-reading"></span>Lese ich<span class="count" id="count-reading">0</span></button>
+          <button class="tab" data-status="unread"><span class="tab-dot s-unread"></span>Ungelesen<span class="count" id="count-unread">0</span></button>
+          <button class="tab" data-status="read"><span class="tab-dot s-read"></span>Gelesen<span class="count" id="count-read">0</span></button>
+          <button class="tab" data-status="wishlist"><span class="tab-dot s-wishlist"></span>Wunschliste<span class="count" id="count-wishlist">0</span></button>
+          <button class="tab" data-status="dropped"><span class="tab-dot s-dropped"></span>Abgebrochen<span class="count" id="count-dropped">0</span></button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="sidebar-section sidebar-section-filter">
+        <div class="section-label">
+          Filter
+          <span class="filter-badge" id="filter-badge" style="display:none">0</span>
+        </div>
+        <div class="filter-panel" id="filter-panel">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label>Genre</label>
+              <select id="f-genre"><option value="">Alle</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Reihe</label>
+              <select id="f-series"><option value="">Alle</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Autor</label>
+              <select id="f-author"><option value="">Alle</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Sprache</label>
+              <select id="f-language"><option value="">Alle</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Format</label>
+              <select id="f-format"><option value="">Alle</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Sortieren</label>
+              <select id="f-sort">
+                <option value="added-desc">Zuletzt hinzugefügt</option>
+                <option value="added-asc">Älteste zuerst</option>
+                <option value="title">Titel A–Z</option>
+                <option value="author">Autor A–Z</option>
+                <option value="series">Reihe + Band</option>
+                <option value="rating">Bewertung</option>
+                <option value="pages-desc">Seiten (meiste)</option>
+                <option value="pages-asc">Seiten (wenigste)</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-ghost" id="filter-reset">Zurücksetzen</button>
           </div>
         </div>
       </div>
-      <div class="header-actions">
+
+      <!-- Sidebar foot: sync + version (desktop only) -->
+      <div class="sidebar-foot">
         <button class="sync-pill" id="sync-pill" title="Cloud-Sync">
           <span class="dot-s"></span>
-          <span id="sync-label">Lokal</span>
+          <span id="sync-label" data-sync-label>Lokal</span>
         </button>
-        <button class="btn" id="btn-import" title="Import">↑ Import</button>
-        <button class="btn" id="btn-export" title="Export">↓ Export</button>
-        <button class="btn btn-primary" id="btn-add">＋ Buch hinzufügen</button>
+        <span class="version" id="version"></span>
       </div>
-    </div>
-  </header>
 
-  <!-- ALS NÄCHSTES LESEN -->
-  <section class="nextup" id="nextup">
-    <div class="nextup-head">
-      <h2 class="nextup-title">Als Nächstes lesen</h2>
-      <span class="nextup-hint" id="nextup-hint"></span>
-    </div>
-    <div class="nextup-row" id="nextup-row"></div>
-  </section>
+    </aside>
 
-  <!-- TABS -->
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-status="all">Alle <span class="count" id="count-all">0</span></button>
-    <button class="tab" data-status="reading">Lese ich <span class="count" id="count-reading">0</span></button>
-    <button class="tab" data-status="unread">Ungelesen <span class="count" id="count-unread">0</span></button>
-    <button class="tab" data-status="read">Gelesen <span class="count" id="count-read">0</span></button>
-    <button class="tab" data-status="wishlist">Wunschliste <span class="count" id="count-wishlist">0</span></button>
-    <button class="tab" data-status="dropped">Abgebrochen <span class="count" id="count-dropped">0</span></button>
+    <main class="main">
+
+      <!-- Top toolbar -->
+      <div class="main-head">
+        <div class="search-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="text" class="search-input" id="search-input" placeholder="Titel, Autor, Reihe …">
+        </div>
+        <button class="btn filter-toggle filter-toggle-mobile mobile-only" id="filter-toggle">
+          Filter
+          <span class="badge" id="filter-badge-mobile" style="display:none">0</span>
+        </button>
+        <div class="main-actions">
+          <button class="btn" id="btn-import" title="Import">↑ Import</button>
+          <button class="btn" id="btn-export" title="Export">↓ Export</button>
+          <button class="btn btn-primary" id="btn-add">＋ Buch hinzufügen</button>
+        </div>
+      </div>
+
+      <!-- ALS NÄCHSTES LESEN -->
+      <section class="nextup" id="nextup">
+        <div class="nextup-head">
+          <h2 class="nextup-title">Als Nächstes lesen</h2>
+          <span class="nextup-hint" id="nextup-hint"></span>
+        </div>
+        <div class="nextup-row" id="nextup-row"></div>
+      </section>
+
+      <!-- List header -->
+      <div class="list-head">
+        <h2 class="list-title" id="list-title">Alle Bücher</h2>
+        <div class="result-info" id="result-info"></div>
+      </div>
+
+      <!-- BOOK GRID -->
+      <div class="grid" id="grid"></div>
+
+    </main>
+
   </div>
-
-  <!-- TOOLBAR -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input type="text" class="search-input" id="search-input" placeholder="Titel, Autor, Reihe …">
-    </div>
-    <button class="btn filter-toggle" id="filter-toggle">
-      Filter
-      <span class="badge" id="filter-badge" style="display:none">0</span>
-    </button>
-  </div>
-
-  <!-- FILTER PANEL -->
-  <div class="filter-panel" id="filter-panel">
-    <div class="filter-grid">
-      <div class="filter-field">
-        <label>Genre</label>
-        <select id="f-genre"><option value="">Alle</option></select>
-      </div>
-      <div class="filter-field">
-        <label>Reihe</label>
-        <select id="f-series"><option value="">Alle</option></select>
-      </div>
-      <div class="filter-field">
-        <label>Autor</label>
-        <select id="f-author"><option value="">Alle</option></select>
-      </div>
-      <div class="filter-field">
-        <label>Sprache</label>
-        <select id="f-language"><option value="">Alle</option></select>
-      </div>
-      <div class="filter-field">
-        <label>Format</label>
-        <select id="f-format"><option value="">Alle</option></select>
-      </div>
-      <div class="filter-field">
-        <label>Sortieren</label>
-        <select id="f-sort">
-          <option value="added-desc">Zuletzt hinzugefügt</option>
-          <option value="added-asc">Älteste zuerst</option>
-          <option value="title">Titel A–Z</option>
-          <option value="author">Autor A–Z</option>
-          <option value="series">Reihe + Band</option>
-          <option value="rating">Bewertung</option>
-          <option value="pages-desc">Seiten (meiste)</option>
-          <option value="pages-asc">Seiten (wenigste)</option>
-        </select>
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button class="btn btn-ghost" id="filter-reset">Filter zurücksetzen</button>
-    </div>
-  </div>
-
-  <div class="result-info" id="result-info"></div>
-
-  <!-- GRID -->
-  <div class="grid" id="grid"></div>
 
 </div>
+
 
 <!-- ADD/EDIT MODAL -->
 <div class="modal-overlay" id="modal-add">
@@ -1170,7 +1469,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.3.2';
+const VERSION = 'v1.4.0';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
@@ -1198,10 +1497,15 @@ const saveNext = () => { saveLocal(); schedulePush(); };
 /* ============ CLOUD SYNC ============ */
 function setSyncStatus(status, label) {
   sync.status = status;
-  const pill = document.getElementById('sync-pill');
-  if (!pill) return;
-  pill.className = 'sync-pill ' + (status === 'local' ? '' : status);
-  document.getElementById('sync-label').textContent = label;
+  const cls = 'sync-pill ' + (status === 'local' ? '' : status);
+  document.querySelectorAll('.sync-pill').forEach(p => {
+    // preserve mobile-only/desktop-only modifiers if present
+    const modifiers = [];
+    if (p.classList.contains('mobile-only')) modifiers.push('mobile-only');
+    if (p.classList.contains('desktop-only')) modifiers.push('desktop-only');
+    p.className = (cls + ' ' + modifiers.join(' ')).trim();
+  });
+  document.querySelectorAll('[data-sync-label]').forEach(el => el.textContent = label);
 }
 
 async function pullRemote() {
@@ -1306,6 +1610,15 @@ const norm = s => (s || '').toString().toLowerCase().trim();
 const STATUS_LABEL = {
   unread: 'Ungelesen',
   reading: 'Lese ich',
+  read: 'Gelesen',
+  wishlist: 'Wunschliste',
+  dropped: 'Abgebrochen'
+};
+
+const LIST_TITLE = {
+  all: 'Alle Bücher',
+  reading: 'Lese ich gerade',
+  unread: 'Ungelesen',
   read: 'Gelesen',
   wishlist: 'Wunschliste',
   dropped: 'Abgebrochen'
@@ -1689,9 +2002,16 @@ function activeFilterCount() {
 
 function updateFilterBadge() {
   const n = activeFilterCount();
-  const badge = $('#filter-badge');
-  if (n > 0) { badge.style.display = 'flex'; badge.textContent = n; }
-  else badge.style.display = 'none';
+  [$('#filter-badge'), $('#filter-badge-mobile')].forEach(badge => {
+    if (!badge) return;
+    if (n > 0) { badge.style.display = 'flex'; badge.textContent = n; }
+    else badge.style.display = 'none';
+  });
+}
+
+function updateListTitle() {
+  const el = $('#list-title');
+  if (el) el.textContent = LIST_TITLE[activeStatus] || 'Alle Bücher';
 }
 
 function escapeHtml(s) {
@@ -1838,6 +2158,7 @@ function render() {
   updateCounts();
   updateFilterOptions();
   updateFilterBadge();
+  updateListTitle();
   renderNextUp();
 
   const list = getFiltered();
@@ -2128,8 +2449,8 @@ $('#import-file').addEventListener('change', e => {
   e.target.value = '';
 });
 
-// Sync pill + config
-$('#sync-pill').addEventListener('click', openSyncConfig);
+// Sync pill + config (multiple pills due to responsive layout)
+document.querySelectorAll('.sync-pill').forEach(p => p.addEventListener('click', openSyncConfig));
 $('#sync-connect').addEventListener('click', connectSync);
 $('#sync-forget').addEventListener('click', forgetSync);
 

@@ -1,5 +1,5 @@
 // Meine Bibliothek — Service Worker
-const CACHE = 'bibliothek-v9';
+const CACHE = 'bibliothek-v10';
 const ASSETS = [
   './bibliothek.html',
   './manifest.json',
