@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7c2d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bibliothek">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Meine Bibliothek</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #faf6f1;
+    --surface: #ffffff;
+    --surface-soft: #f3ece2;
+    --border: #e6dcc9;
+    --border-strong: #d4c6ab;
+    --text: #2a1e14;
+    --muted: #7a6a55;
+    --accent: #7c2d12;       /* brick / sepia */
+    --accent-soft: #fde6d3;
+    --accent-ink: #4a1a0a;
+    --accent2: #b45309;      /* amber for secondary */
+    --green: #15803d;
+    --orange: #c2410c;
+    --purple: #6b21a8;
+    --grey: #57534e;
+    --red: #b91c1c;
+    --shadow: 0 1px 2px rgba(74,26,10,0.04), 0 8px 24px rgba(74,26,10,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* subtle paper texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(124,45,18,0.025), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(180,83,9,0.025), transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-ink) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #faf6f1;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    box-shadow: 0 2px 8px rgba(124,45,18,0.25);
+  }
+  .brand-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: -2px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn:hover { background: var(--surface-soft); border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent);
+    color: #faf6f1;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent-ink);
+    border-color: var(--accent-ink);
+  }
+  .btn-ghost { border-color: transparent; background: transparent; }
+  .btn-ghost:hover { background: var(--surface-soft); }
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .tab {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab .count {
+    background: var(--surface-soft);
+    color: var(--muted);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tab.active {
+    color: #faf6f1;
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .tab.active .count {
+    background: rgba(255,255,255,0.2);
+    color: #faf6f1;
+  }
+  .tab.active[data-status="reading"] { background: var(--orange); border-color: var(--orange); }
+  .tab.active[data-status="read"] { background: var(--green); border-color: var(--green); }
+  .tab.active[data-status="unread"] { background: var(--purple); border-color: var(--purple); }
+  .tab.active[data-status="wishlist"] { background: var(--grey); border-color: var(--grey); }
+  .tab.active[data-status="dropped"] { background: var(--red); border-color: var(--red); }
+
+  /* ALS NÄCHSTES LESEN */
+  .nextup {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px 18px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  .nextup-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .nextup-title {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .nextup-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .nextup-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .next-slot {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    min-height: 96px;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+  .next-slot .slot-num {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #faf6f1;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  /* Filled slot */
+  .next-slot.filled {
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .next-slot.filled:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+  .next-cover {
+    width: 62px;
+    flex-shrink: 0;
+    background: var(--surface-soft);
+    overflow: hidden;
+  }
+  .next-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .next-cover .ph {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 24px; color: var(--muted);
+  }
+  .next-body {
+    flex: 1;
+    padding: 10px 10px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .next-book-title {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .next-book-author {
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .next-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 6px;
+  }
+  .next-mini {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    transition: all 0.12s;
+  }
+  .next-mini:hover { background: var(--surface-soft); border-color: var(--accent); }
+  .next-mini.remove:hover { border-color: var(--red); color: var(--red); }
+  /* Empty slot */
+  .next-slot.empty {
+    border-style: dashed;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.12s;
+  }
+  .next-slot.empty:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .next-slot.empty .add-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* PICKER MODAL list */
+  .picker-search {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  .picker-search:focus { outline: none; border-color: var(--accent); }
+  .picker-list {
+    max-height: 360px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .picker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .picker-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .picker-item .pi-cover {
+    width: 34px; height: 50px; border-radius: 4px;
+    object-fit: cover; flex-shrink: 0; background: var(--surface-soft);
+  }
+  .picker-item .pi-ph {
+    width: 34px; height: 50px; border-radius: 4px; flex-shrink: 0;
+    background: var(--surface-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; color: var(--muted);
+  }
+  .picker-item .pi-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 14px; line-height: 1.2; }
+  .picker-item .pi-author { font-size: 12px; color: var(--muted); }
+  .picker-empty { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+
+  @media (max-width: 600px) {
+    .nextup-row { grid-template-columns: 1fr; }
+  }
+
+  /* SEARCH + FILTER BAR */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+  }
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    padding: 10px 14px 10px 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .filter-toggle {
+    position: relative;
+  }
+  .filter-toggle .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--accent);
+    color: #faf6f1;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    display: none;
+  }
+  .filter-panel.open { display: block; }
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .filter-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .filter-field select, .filter-field input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .filter-field select:focus, .filter-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  /* RESULT INFO */
+  .result-info {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  /* CARDS GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(74,26,10,0.06), 0 12px 32px rgba(74,26,10,0.1);
+  }
+
+  .cover-wrap {
+    aspect-ratio: 2 / 3;
+    background: linear-gradient(135deg, var(--surface-soft) 0%, #e8ddc9 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .cover-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .cover-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: 'Fraunces', serif;
+    font-size: 38px;
+    font-weight: 600;
+  }
+  .status-pill {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(4px);
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .status-pill.s-reading { background: var(--orange); color: white; }
+  .status-pill.s-read { background: var(--green); color: white; }
+  .status-pill.s-unread { background: var(--purple); color: white; }
+  .status-pill.s-wishlist { background: var(--grey); color: white; }
+  .status-pill.s-dropped { background: var(--red); color: white; }
+
+  .series-pill {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-body {
+    padding: 12px 14px 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-author {
+    font-size: 13px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-meta {
+    margin-top: auto;
+    padding-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .card-meta .dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--border-strong);
+  }
+  .rating {
+    color: var(--accent2);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+  }
+  .empty-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty-text { font-size: 14px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(42,30,20,0.55);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 40px 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg);
+    border-radius: 14px;
+    max-width: 720px;
+    width: 100%;
+    box-shadow: 0 24px 80px rgba(74,26,10,0.3);
+    border: 1px solid var(--border);
+  }
+  .modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .modal-body {
+    padding: 22px;
+  }
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .modal-footer .footer-left, .modal-footer .footer-right {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .form-field textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* ISBN SCAN BLOCK */
+  .scan-block {
+    background: var(--surface-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .scan-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .scan-row input {
+    flex: 1;
+    min-width: 180px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .scan-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  #scanner-view {
+    margin-top: 12px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    display: none;
+  }
+  #scanner-view.active { display: block; }
+  .scan-status {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* RATING STARS in form */
+  .stars-input {
+    display: flex;
+    gap: 4px;
+  }
+  .stars-input button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--border-strong);
+    padding: 0;
+    transition: color 0.1s;
+  }
+  .stars-input button.on { color: var(--accent2); }
+  .stars-input button:hover { color: var(--accent2); }
+
+  /* DETAIL VIEW */
+  .detail-wrap {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 22px;
+  }
+  .detail-cover {
+    aspect-ratio: 2 / 3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-soft);
+    box-shadow: var(--shadow);
+  }
+  .detail-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .detail-info h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .detail-info .author {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .meta-chip {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .meta-chip strong { font-weight: 600; }
+  .detail-notes {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-soft);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .detail-wrap { grid-template-columns: 1fr; }
+    .detail-cover { max-width: 200px; margin: 0 auto; }
+    .brand-title { font-size: 22px; }
+    header { padding: 20px 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="header-row">
+      <div class="brand">
+        <div class="brand-mark">B</div>
+        <div>
+          <div class="brand-title">Meine Bibliothek</div>
+          <div class="brand-sub" id="brand-sub">0 Bücher</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="btn-import" title="Import">↑ Import</button>
+        <button class="btn" id="btn-export" title="Export">↓ Export</button>
+        <button class="btn btn-primary" id="btn-add">＋ Buch hinzufügen</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ALS NÄCHSTES LESEN -->
+  <section class="nextup" id="nextup">
+    <div class="nextup-head">
+      <h2 class="nextup-title">Als Nächstes lesen</h2>
+      <span class="nextup-hint" id="nextup-hint"></span>
+    </div>
+    <div class="nextup-row" id="nextup-row"></div>
+  </section>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-status="all">Alle <span class="count" id="count-all">0</span></button>
+    <button class="tab" data-status="reading">Lese ich <span class="count" id="count-reading">0</span></button>
+    <button class="tab" data-status="unread">Ungelesen <span class="count" id="count-unread">0</span></button>
+    <button class="tab" data-status="read">Gelesen <span class="count" id="count-read">0</span></button>
+    <button class="tab" data-status="wishlist">Wunschliste <span class="count" id="count-wishlist">0</span></button>
+    <button class="tab" data-status="dropped">Abgebrochen <span class="count" id="count-dropped">0</span></button>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" class="search-input" id="search-input" placeholder="Titel, Autor, Reihe …">
+    </div>
+    <button class="btn filter-toggle" id="filter-toggle">
+      Filter
+      <span class="badge" id="filter-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <!-- FILTER PANEL -->
+  <div class="filter-panel" id="filter-panel">
+    <div class="filter-grid">
+      <div class="filter-field">
+        <label>Genre</label>
+        <select id="f-genre"><option value="">Alle</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Reihe</label>
+        <select id="f-series"><option value="">Alle</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Autor</label>
+        <select id="f-author"><option value="">Alle</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Sprache</label>
+        <select id="f-language"><option value="">Alle</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Format</label>
+        <select id="f-format"><option value="">Alle</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Sortieren</label>
+        <select id="f-sort">
+          <option value="added-desc">Zuletzt hinzugefügt</option>
+          <option value="added-asc">Älteste zuerst</option>
+          <option value="title">Titel A–Z</option>
+          <option value="author">Autor A–Z</option>
+          <option value="series">Reihe + Band</option>
+          <option value="rating">Bewertung</option>
+          <option value="pages-desc">Seiten (meiste)</option>
+          <option value="pages-asc">Seiten (wenigste)</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-ghost" id="filter-reset">Filter zurücksetzen</button>
+    </div>
+  </div>
+
+  <div class="result-info" id="result-info"></div>
+
+  <!-- GRID -->
+  <div class="grid" id="grid"></div>
+
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-add-title">Buch hinzufügen</div>
+      <button class="btn btn-ghost btn-icon" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="scan-block" id="scan-block">
+        <div class="scan-row">
+          <input type="text" id="isbn-input" placeholder="ISBN eingeben (z. B. 9783453438361)" inputmode="numeric">
+          <button class="btn" id="btn-lookup">🔍 Suchen</button>
+          <button class="btn btn-primary" id="btn-scan">📷 Scannen</button>
+        </div>
+        <div class="scan-hint">Tipp: Mit der ISBN werden Titel, Autor, Seiten und Cover automatisch geladen.</div>
+        <div id="scanner-view"></div>
+        <div class="scan-status" id="scan-status"></div>
+      </div>
+
+      <form id="book-form">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>Titel *</label>
+            <input type="text" name="title" required>
+          </div>
+          <div class="form-field">
+            <label>Autor *</label>
+            <input type="text" name="author" required>
+          </div>
+          <div class="form-field">
+            <label>Genre</label>
+            <input type="text" name="genre" list="genre-list">
+            <datalist id="genre-list">
+              <option value="Fantasy">
+              <option value="Science-Fiction">
+              <option value="Krimi">
+              <option value="Thriller">
+              <option value="Roman">
+              <option value="Historischer Roman">
+              <option value="Sachbuch">
+              <option value="Biografie">
+              <option value="Horror">
+              <option value="Jugendbuch">
+              <option value="Kinderbuch">
+              <option value="Comic / Graphic Novel">
+              <option value="Romantik">
+            </datalist>
+          </div>
+          <div class="form-field">
+            <label>Reihe</label>
+            <input type="text" name="series" placeholder="z. B. Der Hexer">
+          </div>
+          <div class="form-field">
+            <label>Band Nr.</label>
+            <input type="number" name="volume" min="0" step="1" placeholder="z. B. 1">
+          </div>
+          <div class="form-field">
+            <label>Seiten</label>
+            <input type="number" name="pages" min="0" step="1">
+          </div>
+          <div class="form-field">
+            <label>Sprache</label>
+            <input type="text" name="language" list="lang-list" placeholder="z. B. Deutsch">
+            <datalist id="lang-list">
+              <option value="Deutsch">
+              <option value="Englisch">
+              <option value="Französisch">
+              <option value="Spanisch">
+              <option value="Italienisch">
+            </datalist>
+          </div>
+          <div class="form-field">
+            <label>Format</label>
+            <select name="format">
+              <option value="">—</option>
+              <option>Taschenbuch</option>
+              <option>Hardcover</option>
+              <option>E-Book</option>
+              <option>Hörbuch</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <select name="status">
+              <option value="unread">Ungelesen</option>
+              <option value="reading">Lese ich gerade</option>
+              <option value="read">Gelesen</option>
+              <option value="wishlist">Wunschliste</option>
+              <option value="dropped">Abgebrochen</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Bewertung</label>
+            <div class="stars-input" id="stars-input">
+              <button type="button" data-v="1">★</button>
+              <button type="button" data-v="2">★</button>
+              <button type="button" data-v="3">★</button>
+              <button type="button" data-v="4">★</button>
+              <button type="button" data-v="5">★</button>
+            </div>
+            <input type="hidden" name="rating" value="0">
+          </div>
+          <div class="form-field full">
+            <label>Cover-URL (optional)</label>
+            <input type="text" name="cover" placeholder="https://…">
+          </div>
+          <div class="form-field full">
+            <label>ISBN</label>
+            <input type="text" name="isbn">
+          </div>
+          <div class="form-field full">
+            <label>Notizen</label>
+            <textarea name="notes" placeholder="Eigene Gedanken, Zitate, Empfehlungen …"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <div class="footer-left">
+        <button class="btn" id="btn-delete" style="color:var(--red);border-color:var(--red);display:none">Löschen</button>
+      </div>
+      <div class="footer-right">
+        <button class="btn" data-close>Abbrechen</button>
+        <button class="btn btn-primary" id="btn-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Buchdetails</div>
+      <button class="btn btn-ghost btn-icon" data-close>✕</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <div class="footer-left"></div>
+      <div class="footer-right">
+        <button class="btn" id="btn-edit-from-detail">Bearbeiten</button>
+        <button class="btn" data-close>Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PICKER MODAL (Buch für Platz wählen) -->
+<div class="modal-overlay" id="modal-picker">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="picker-title">Buch wählen</div>
+      <button class="btn btn-ghost btn-icon" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" class="picker-search" id="picker-search" placeholder="Titel oder Autor suchen …">
+      <div class="picker-list" id="picker-list"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept="application/json" style="display:none">
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STORAGE ============ */
+const KEY = 'bibliothek.v1';
+const NEXT_KEY = 'bibliothek.next.v1';
+let books = JSON.parse(localStorage.getItem(KEY) || '[]');
+// "Als Nächstes lesen" – array of up to 3 book ids, index 0 = Platz 1
+let nextUp = JSON.parse(localStorage.getItem(NEXT_KEY) || '[]');
+const save = () => localStorage.setItem(KEY, JSON.stringify(books));
+const saveNext = () => localStorage.setItem(NEXT_KEY, JSON.stringify(nextUp));
+
+/* ============ STATE ============ */
+let activeStatus = 'all';
+let editingId = null;
+let html5Qr = null;
+let scanning = false;
+
+/* ============ HELPERS ============ */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const norm = s => (s || '').toString().toLowerCase().trim();
+
+const STATUS_LABEL = {
+  unread: 'Ungelesen',
+  reading: 'Lese ich',
+  read: 'Gelesen',
+  wishlist: 'Wunschliste',
+  dropped: 'Abgebrochen'
+};
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ============ API LOOKUP ============ */
+// Tries Google Books first, then Open Library as fallback
+async function lookupIsbn(isbn) {
+  const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
+  if (cleanIsbn.length < 10) throw new Error('ISBN zu kurz');
+
+  // Google Books
+  try {
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+    const data = await r.json();
+    if (data.totalItems > 0) {
+      const v = data.items[0].volumeInfo;
+      return {
+        title: v.title || '',
+        author: (v.authors || []).join(', '),
+        genre: (v.categories || [])[0] || '',
+        pages: v.pageCount || '',
+        language: langName(v.language) || '',
+        cover: v.imageLinks ? (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || '').replace('http:', 'https:') : '',
+        isbn: cleanIsbn,
+        notes: v.description ? v.description.slice(0, 500) : ''
+      };
+    }
+  } catch (e) { /* fallthrough */ }
+
+  // Open Library fallback
+  try {
+    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
+    const data = await r.json();
+    const k = `ISBN:${cleanIsbn}`;
+    if (data[k]) {
+      const v = data[k];
+      return {
+        title: v.title || '',
+        author: (v.authors || []).map(a => a.name).join(', '),
+        genre: (v.subjects || [])[0]?.name || '',
+        pages: v.number_of_pages || '',
+        language: '',
+        cover: v.cover?.large || v.cover?.medium || '',
+        isbn: cleanIsbn,
+        notes: ''
+      };
+    }
+  } catch (e) { /* fallthrough */ }
+
+  throw new Error('Kein Treffer für diese ISBN');
+}
+
+function langName(code) {
+  const map = { de: 'Deutsch', en: 'Englisch', fr: 'Französisch', es: 'Spanisch', it: 'Italienisch' };
+  return map[code] || code || '';
+}
+
+/* ============ SCANNER ============ */
+async function startScanner() {
+  if (scanning) return;
+  const view = $('#scanner-view');
+  view.classList.add('active');
+  view.innerHTML = '<div id="qr-reader" style="width:100%"></div>';
+  $('#scan-status').textContent = 'Kamera startet …';
+
+  html5Qr = new Html5Qrcode('qr-reader');
+  scanning = true;
+
+  try {
+    await html5Qr.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      async (decoded) => {
+        if (!scanning) return;
+        scanning = false;
+        $('#scan-status').textContent = '✓ Gefunden: ' + decoded;
+        await stopScanner();
+        $('#isbn-input').value = decoded;
+        doLookup(decoded);
+      },
+      () => {}
+    );
+  } catch (e) {
+    $('#scan-status').textContent = 'Kamera-Zugriff verweigert oder nicht verfügbar.';
+    scanning = false;
+  }
+}
+
+async function stopScanner() {
+  if (html5Qr) {
+    try { await html5Qr.stop(); html5Qr.clear(); } catch(e){}
+    html5Qr = null;
+  }
+  $('#scanner-view').classList.remove('active');
+  $('#scanner-view').innerHTML = '';
+  scanning = false;
+}
+
+async function doLookup(isbn) {
+  if (!isbn) { isbn = $('#isbn-input').value.trim(); }
+  if (!isbn) { toast('Bitte ISBN eingeben'); return; }
+
+  // Check for duplicate
+  const clean = isbn.replace(/[^0-9X]/gi, '');
+  const dup = books.find(b => (b.isbn || '').replace(/[^0-9X]/gi, '') === clean && b.id !== editingId);
+  if (dup) {
+    if (!confirm(`„${dup.title}" ist bereits in deiner Bibliothek. Trotzdem fortfahren?`)) return;
+  }
+
+  $('#scan-status').textContent = 'Suche …';
+  try {
+    const data = await lookupIsbn(isbn);
+    fillForm(data);
+    $('#scan-status').textContent = '✓ Buchdaten geladen';
+    setTimeout(() => $('#scan-status').textContent = '', 2500);
+  } catch (e) {
+    $('#scan-status').textContent = '⚠ ' + e.message + ' — bitte manuell ausfüllen.';
+  }
+}
+
+function fillForm(data) {
+  const f = $('#book-form');
+  for (const [k, v] of Object.entries(data)) {
+    if (f[k] && v) f[k].value = v;
+  }
+}
+
+/* ============ RENDER ============ */
+function getFiltered() {
+  const q = norm($('#search-input').value);
+  const g = $('#f-genre').value;
+  const s = $('#f-series').value;
+  const a = $('#f-author').value;
+  const l = $('#f-language').value;
+  const fmt = $('#f-format').value;
+  const sort = $('#f-sort').value;
+
+  let list = books.filter(b => {
+    if (activeStatus !== 'all' && b.status !== activeStatus) return false;
+    if (g && b.genre !== g) return false;
+    if (s && b.series !== s) return false;
+    if (a && b.author !== a) return false;
+    if (l && b.language !== l) return false;
+    if (fmt && b.format !== fmt) return false;
+    if (q) {
+      const hay = [b.title, b.author, b.series, b.genre, b.notes].map(norm).join(' ');
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  list.sort((x, y) => {
+    switch (sort) {
+      case 'added-asc': return (x.added || 0) - (y.added || 0);
+      case 'title': return (x.title || '').localeCompare(y.title || '', 'de');
+      case 'author': return (x.author || '').localeCompare(y.author || '', 'de');
+      case 'series': {
+        const cmp = (x.series || '').localeCompare(y.series || '', 'de');
+        if (cmp !== 0) return cmp;
+        return (parseInt(x.volume) || 0) - (parseInt(y.volume) || 0);
+      }
+      case 'rating': return (y.rating || 0) - (x.rating || 0);
+      case 'pages-desc': return (parseInt(y.pages) || 0) - (parseInt(x.pages) || 0);
+      case 'pages-asc': return (parseInt(x.pages) || 0) - (parseInt(y.pages) || 0);
+      case 'added-desc':
+      default: return (y.added || 0) - (x.added || 0);
+    }
+  });
+
+  return list;
+}
+
+function updateCounts() {
+  const counts = { all: books.length, reading: 0, unread: 0, read: 0, wishlist: 0, dropped: 0 };
+  books.forEach(b => { if (counts[b.status] !== undefined) counts[b.status]++; });
+  Object.entries(counts).forEach(([k, v]) => $(`#count-${k}`).textContent = v);
+  $('#brand-sub').textContent = books.length + (books.length === 1 ? ' Buch' : ' Bücher');
+}
+
+function updateFilterOptions() {
+  const fill = (id, vals) => {
+    const el = $('#' + id);
+    const cur = el.value;
+    el.innerHTML = '<option value="">Alle</option>' +
+      [...new Set(vals.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'))
+        .map(v => `<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join('');
+    if (cur && [...el.options].some(o => o.value === cur)) el.value = cur;
+  };
+  fill('f-genre', books.map(b => b.genre));
+  fill('f-series', books.map(b => b.series));
+  fill('f-author', books.flatMap(b => (b.author || '').split(',').map(s => s.trim())));
+  fill('f-language', books.map(b => b.language));
+  fill('f-format', books.map(b => b.format));
+}
+
+function activeFilterCount() {
+  let n = 0;
+  ['f-genre','f-series','f-author','f-language','f-format'].forEach(id => { if ($('#' + id).value) n++; });
+  return n;
+}
+
+function updateFilterBadge() {
+  const n = activeFilterCount();
+  const badge = $('#filter-badge');
+  if (n > 0) { badge.style.display = 'flex'; badge.textContent = n; }
+  else badge.style.display = 'none';
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+/* ============ ALS NÄCHSTES LESEN ============ */
+let pickerSlot = null; // which slot (0-2) we're filling
+
+// Drop ids that no longer exist (deleted books) and dedupe; keep max 3
+function cleanNextUp() {
+  const seen = new Set();
+  nextUp = nextUp.filter(id => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return books.some(b => b.id === id);
+  }).slice(0, 3);
+}
+
+function coverHtml(b, cls) {
+  return b.cover
+    ? `<img src="${escapeAttr(b.cover)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;${cls}&quot;>${escapeHtml((b.title||'?')[0].toUpperCase())}</div>'">`
+    : `<div class="${cls}">${escapeHtml((b.title || '?')[0].toUpperCase())}</div>`;
+}
+
+function renderNextUp() {
+  cleanNextUp();
+  const row = $('#nextup-row');
+  const filledCount = nextUp.length;
+  $('#nextup-hint').textContent =
+    filledCount === 0 ? 'Wähle bis zu 3 Bücher in Lesereihenfolge.'
+    : `${filledCount} von 3 Plätzen belegt`;
+
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    const id = nextUp[i];
+    const b = id ? books.find(x => x.id === id) : null;
+    if (b) {
+      const canDown = i < nextUp.length - 1;
+      const canUp = i > 0;
+      html += `
+        <div class="next-slot filled" data-detail="${b.id}">
+          <div class="slot-num">${i + 1}</div>
+          <div class="next-cover">${coverHtml(b, 'ph')}</div>
+          <div class="next-body">
+            <div class="next-book-title">${escapeHtml(b.title)}</div>
+            <div class="next-book-author">${escapeHtml(b.author)}</div>
+            <div class="next-actions">
+              ${canUp ? `<button class="next-mini" data-move="up" data-i="${i}" title="Nach oben">↑</button>` : ''}
+              ${canDown ? `<button class="next-mini" data-move="down" data-i="${i}" title="Nach unten">↓</button>` : ''}
+              <button class="next-mini remove" data-remove="${i}" title="Entfernen">Entfernen</button>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      // Empty slot — only show as choosable if it's the next free slot in order
+      const isNextFree = (i === nextUp.length);
+      html += `
+        <div class="next-slot empty" ${isNextFree ? `data-pick="${i}"` : 'style="opacity:.5;cursor:default"'}>
+          <div class="slot-num">${i + 1}</div>
+          <span class="add-label">${isNextFree ? '＋ Buch wählen' : '—'}</span>
+        </div>`;
+    }
+  }
+  row.innerHTML = html;
+}
+
+function addToNextUp(id) {
+  cleanNextUp();
+  if (nextUp.includes(id)) { toast('Buch ist schon in der Liste'); return; }
+  if (nextUp.length >= 3) { toast('Alle 3 Plätze belegt'); return; }
+  nextUp.push(id);
+  saveNext();
+  render();
+}
+
+function removeFromNextUp(index) {
+  nextUp.splice(index, 1);
+  saveNext();
+  render();
+}
+
+function moveNextUp(index, dir) {
+  const j = dir === 'up' ? index - 1 : index + 1;
+  if (j < 0 || j >= nextUp.length) return;
+  [nextUp[index], nextUp[j]] = [nextUp[j], nextUp[index]];
+  saveNext();
+  render();
+}
+
+// Called when a book's status becomes "read": if it sat on Platz 1, advance.
+function handleStatusToRead(id) {
+  cleanNextUp();
+  const idx = nextUp.indexOf(id);
+  if (idx === -1) return false;          // not in the list
+  nextUp.splice(idx, 1);                 // remove it; the rest shifts up
+  saveNext();
+  return idx === 0;                      // true if it was Platz 1
+}
+
+/* ----- Picker modal ----- */
+function openPicker(slot) {
+  pickerSlot = slot;
+  $('#picker-title').textContent = `Buch für Platz ${slot + 1} wählen`;
+  $('#picker-search').value = '';
+  renderPickerList('');
+  $('#modal-picker').classList.add('open');
+  setTimeout(() => $('#picker-search').focus(), 50);
+}
+
+function renderPickerList(q) {
+  const nq = norm(q);
+  // Choose from books not already in nextUp and not already read
+  const candidates = books
+    .filter(b => !nextUp.includes(b.id) && b.status !== 'read')
+    .filter(b => {
+      if (!nq) return true;
+      return norm(b.title + ' ' + b.author + ' ' + (b.series || '')).includes(nq);
+    })
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'de'));
+
+  const list = $('#picker-list');
+  if (candidates.length === 0) {
+    list.innerHTML = `<div class="picker-empty">${books.length === 0 ? 'Noch keine Bücher in der Bibliothek.' : 'Keine passenden Bücher gefunden.'}</div>`;
+    return;
+  }
+  list.innerHTML = candidates.map(b => {
+    const cover = b.cover
+      ? `<img class="pi-cover" src="${escapeAttr(b.cover)}" onerror="this.outerHTML='<div class=&quot;pi-ph&quot;>${escapeHtml((b.title||'?')[0].toUpperCase())}</div>'">`
+      : `<div class="pi-ph">${escapeHtml((b.title || '?')[0].toUpperCase())}</div>`;
+    return `
+      <div class="picker-item" data-pick-id="${b.id}">
+        ${cover}
+        <div style="min-width:0">
+          <div class="pi-title">${escapeHtml(b.title)}</div>
+          <div class="pi-author">${escapeHtml(b.author)}${b.series ? ' · ' + escapeHtml(b.series) + (b.volume ? ' Bd. ' + escapeHtml(b.volume) : '') : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function render() {
+  updateCounts();
+  updateFilterOptions();
+  updateFilterBadge();
+  renderNextUp();
+
+  const list = getFiltered();
+  const grid = $('#grid');
+
+  $('#result-info').textContent =
+    list.length === books.length
+      ? `${list.length} ${list.length === 1 ? 'Buch' : 'Bücher'}`
+      : `${list.length} von ${books.length} angezeigt`;
+
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="empty-icon">📚</div>
+        <div class="empty-title">${books.length === 0 ? 'Noch keine Bücher' : 'Keine Treffer'}</div>
+        <div class="empty-text">${books.length === 0 ? 'Füge dein erstes Buch hinzu – per ISBN-Scan oder manuell.' : 'Versuche andere Filter oder Suchbegriffe.'}</div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(b => {
+    const stars = b.rating ? '★'.repeat(b.rating) : '';
+    const pages = b.pages ? `${b.pages} S.` : '';
+    const seriesBadge = b.series
+      ? `<div class="series-pill">${escapeHtml(b.series)}${b.volume ? ' · Bd. ' + escapeHtml(b.volume) : ''}</div>`
+      : '';
+    const cover = b.cover
+      ? `<img src="${escapeAttr(b.cover)}" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="cover-placeholder">${escapeHtml((b.title || '?')[0].toUpperCase())}</div>`;
+    return `
+      <div class="card" data-id="${b.id}">
+        <div class="cover-wrap">
+          ${cover}
+          <div class="status-pill s-${b.status}">${STATUS_LABEL[b.status] || b.status}</div>
+          ${seriesBadge}
+        </div>
+        <div class="card-body">
+          <div class="card-title">${escapeHtml(b.title)}</div>
+          <div class="card-author">${escapeHtml(b.author)}</div>
+          <div class="card-meta">
+            ${pages ? `<span>${pages}</span>` : ''}
+            ${pages && stars ? '<span class="dot"></span>' : ''}
+            ${stars ? `<span class="rating">${stars}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============ MODAL HANDLERS ============ */
+function openAdd(book) {
+  editingId = book ? book.id : null;
+  $('#modal-add-title').textContent = book ? 'Buch bearbeiten' : 'Buch hinzufügen';
+  $('#btn-delete').style.display = book ? 'inline-flex' : 'none';
+  $('#scan-block').style.display = book ? 'none' : 'block';
+  const f = $('#book-form');
+  f.reset();
+  $('#isbn-input').value = '';
+  $('#scan-status').textContent = '';
+  setStars(book ? (book.rating || 0) : 0);
+  if (book) {
+    Object.entries(book).forEach(([k, v]) => { if (f[k]) f[k].value = v ?? ''; });
+  }
+  $('#modal-add').classList.add('open');
+}
+
+function closeModals() {
+  $$('.modal-overlay').forEach(m => m.classList.remove('open'));
+  stopScanner();
+}
+
+function setStars(n) {
+  $('#book-form').rating.value = n;
+  $$('#stars-input button').forEach(b => {
+    b.classList.toggle('on', parseInt(b.dataset.v) <= n);
+  });
+}
+
+function openDetail(id) {
+  const b = books.find(x => x.id === id);
+  if (!b) return;
+  const stars = b.rating ? '★'.repeat(b.rating) + '☆'.repeat(5 - b.rating) : '—';
+  const cover = b.cover
+    ? `<img src="${escapeAttr(b.cover)}" onerror="this.parentNode.innerHTML='<div class=cover-placeholder>📖</div>'">`
+    : `<div class="cover-placeholder" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px">📖</div>`;
+
+  const chips = [
+    b.genre && `<span class="meta-chip"><strong>Genre:</strong> ${escapeHtml(b.genre)}</span>`,
+    b.series && `<span class="meta-chip"><strong>Reihe:</strong> ${escapeHtml(b.series)}${b.volume ? ' · Bd. ' + escapeHtml(b.volume) : ''}</span>`,
+    b.pages && `<span class="meta-chip"><strong>Seiten:</strong> ${escapeHtml(b.pages)}</span>`,
+    b.language && `<span class="meta-chip"><strong>Sprache:</strong> ${escapeHtml(b.language)}</span>`,
+    b.format && `<span class="meta-chip"><strong>Format:</strong> ${escapeHtml(b.format)}</span>`,
+    b.isbn && `<span class="meta-chip"><strong>ISBN:</strong> ${escapeHtml(b.isbn)}</span>`
+  ].filter(Boolean).join('');
+
+  $('#detail-body').innerHTML = `
+    <div class="detail-wrap">
+      <div class="detail-cover">${cover}</div>
+      <div class="detail-info">
+        <h2>${escapeHtml(b.title)}</h2>
+        <div class="author">${escapeHtml(b.author)}</div>
+        <div class="detail-meta">
+          <span class="meta-chip"><strong>Status:</strong> ${STATUS_LABEL[b.status] || b.status}</span>
+          <span class="meta-chip"><strong>Bewertung:</strong> <span class="rating" style="color:var(--accent2)">${stars}</span></span>
+          ${chips}
+        </div>
+        ${b.notes ? `<div class="detail-notes">${escapeHtml(b.notes)}</div>` : ''}
+      </div>
+    </div>`;
+  $('#modal-detail').dataset.id = id;
+  $('#modal-detail').classList.add('open');
+}
+
+/* ============ EVENT WIRING ============ */
+// Tabs
+$('#tabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab');
+  if (!t) return;
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  activeStatus = t.dataset.status;
+  render();
+});
+
+// Search + filters
+$('#search-input').addEventListener('input', render);
+['f-genre','f-series','f-author','f-language','f-format','f-sort'].forEach(id => {
+  $('#' + id).addEventListener('change', render);
+});
+
+// Filter panel toggle
+$('#filter-toggle').addEventListener('click', () => $('#filter-panel').classList.toggle('open'));
+$('#filter-reset').addEventListener('click', () => {
+  ['f-genre','f-series','f-author','f-language','f-format'].forEach(id => $('#' + id).value = '');
+  $('#f-sort').value = 'added-desc';
+  render();
+});
+
+// Add book button
+$('#btn-add').addEventListener('click', () => openAdd(null));
+
+// Next-up row interactions
+$('#nextup-row').addEventListener('click', e => {
+  const pickSlot = e.target.closest('[data-pick]');
+  if (pickSlot) { openPicker(parseInt(pickSlot.dataset.pick)); return; }
+
+  const removeBtn = e.target.closest('[data-remove]');
+  if (removeBtn) { e.stopPropagation(); removeFromNextUp(parseInt(removeBtn.dataset.remove)); return; }
+
+  const moveBtn = e.target.closest('[data-move]');
+  if (moveBtn) { e.stopPropagation(); moveNextUp(parseInt(moveBtn.dataset.i), moveBtn.dataset.move); return; }
+
+  const slot = e.target.closest('[data-detail]');
+  if (slot) openDetail(slot.dataset.detail);
+});
+
+// Picker
+$('#picker-search').addEventListener('input', e => renderPickerList(e.target.value));
+$('#picker-list').addEventListener('click', e => {
+  const item = e.target.closest('[data-pick-id]');
+  if (!item) return;
+  addToNextUp(item.dataset.pickId);
+  closeModals();
+});
+
+// Stars
+$('#stars-input').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const v = parseInt(b.dataset.v);
+  const cur = parseInt($('#book-form').rating.value) || 0;
+  setStars(v === cur ? 0 : v);
+});
+
+// Lookup + scan
+$('#btn-lookup').addEventListener('click', () => doLookup());
+$('#isbn-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doLookup(); }});
+$('#btn-scan').addEventListener('click', () => {
+  if (scanning) stopScanner();
+  else startScanner();
+});
+
+// Save book
+$('#btn-save').addEventListener('click', () => {
+  const f = $('#book-form');
+  const fd = new FormData(f);
+  const data = Object.fromEntries(fd.entries());
+  if (!data.title || !data.author) {
+    toast('Titel und Autor sind Pflichtfelder');
+    return;
+  }
+  // Duplicate check (only when adding new)
+  if (!editingId && data.isbn) {
+    const clean = data.isbn.replace(/[^0-9X]/gi, '');
+    const dup = books.find(b => (b.isbn || '').replace(/[^0-9X]/gi, '') === clean);
+    if (dup && !confirm(`„${dup.title}" hat dieselbe ISBN. Trotzdem speichern?`)) return;
+  }
+  data.rating = parseInt(data.rating) || 0;
+  let advancedFromSlot1 = false;
+  if (editingId) {
+    const i = books.findIndex(b => b.id === editingId);
+    const wasRead = books[i].status === 'read';
+    books[i] = { ...books[i], ...data };
+    // If status newly became "read", advance the Next-up list
+    if (!wasRead && data.status === 'read') {
+      advancedFromSlot1 = handleStatusToRead(editingId);
+    }
+    toast('Aktualisiert');
+  } else {
+    books.push({ ...data, id: uid(), added: Date.now() });
+    toast('Hinzugefügt');
+  }
+  save();
+  closeModals();
+  render();
+  if (advancedFromSlot1 && nextUp.length < 3) {
+    // Platz 1 finished and a slot opened up — invite picking the new Platz 3
+    toast('Gelesen! Wähle ein neues Buch für die Liste.');
+  }
+});
+
+// Delete
+$('#btn-delete').addEventListener('click', () => {
+  if (!editingId) return;
+  const b = books.find(x => x.id === editingId);
+  if (!confirm(`„${b.title}" wirklich löschen?`)) return;
+  books = books.filter(x => x.id !== editingId);
+  save();
+  closeModals();
+  render();
+  toast('Gelöscht');
+});
+
+// Detail → edit
+$('#btn-edit-from-detail').addEventListener('click', () => {
+  const id = $('#modal-detail').dataset.id;
+  const b = books.find(x => x.id === id);
+  closeModals();
+  if (b) openAdd(b);
+});
+
+// Card click → detail
+$('#grid').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (card) openDetail(card.dataset.id);
+});
+
+// Close modals
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.classList.contains('modal-overlay')) {
+    closeModals();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModals();
+});
+
+// Export
+$('#btn-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bibliothek-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Export gespeichert');
+});
+
+// Import
+$('#btn-import').addEventListener('click', () => $('#import-file').click());
+$('#import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error('Ungültiges Format');
+      const mode = confirm(`${imported.length} Bücher importieren?\n\nOK = Hinzufügen (Duplikate übersprungen)\nAbbrechen = Bestehende ersetzen`);
+      if (mode) {
+        const existing = new Set(books.map(b => (b.isbn || '').replace(/[^0-9X]/gi, '')).filter(Boolean));
+        const newOnes = imported.filter(b => {
+          const k = (b.isbn || '').replace(/[^0-9X]/gi, '');
+          return !k || !existing.has(k);
+        });
+        books = [...books, ...newOnes.map(b => ({ ...b, id: b.id || uid(), added: b.added || Date.now() }))];
+        toast(`${newOnes.length} neue importiert`);
+      } else {
+        if (!confirm('Wirklich alle bestehenden Bücher ersetzen?')) return;
+        books = imported.map(b => ({ ...b, id: b.id || uid(), added: b.added || Date.now() }));
+        toast(`${imported.length} importiert`);
+      }
+      save();
+      render();
+    } catch (err) {
+      alert('Fehler beim Import: ' + err.message);
+    }
+  };
+  r.readAsText(file);
+  e.target.value = '';
+});
+
+// Initial render
+render();
+
+// PWA: register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
