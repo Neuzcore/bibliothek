@@ -108,6 +108,11 @@
     color: var(--muted);
     margin-top: -2px;
   }
+  .brand-sub .version {
+    opacity: 0.5;
+    font-size: 11px;
+    margin-left: 6px;
+  }
   .header-actions {
     display: flex;
     gap: 8px;
@@ -149,6 +154,39 @@
     padding: 0;
     justify-content: center;
   }
+
+  /* SYNC PILL */
+  .sync-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    color: var(--muted);
+  }
+  .sync-pill:hover { background: var(--surface-soft); }
+  .sync-pill .dot-s {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+  }
+  .sync-pill.connected { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+  .sync-pill.connected .dot-s { background: #15803d; }
+  .sync-pill.syncing { color: #c2410c; border-color: #fed7aa; background: #fff7ed; }
+  .sync-pill.syncing .dot-s { background: #c2410c; animation: pulse 1.2s infinite; }
+  .sync-pill.error { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+  .sync-pill.error .dot-s { background: #b91c1c; }
+  .sync-pill.keyneeded { color: #b45309; border-color: #fde68a; background: #fffbeb; }
+  .sync-pill.keyneeded .dot-s { background: #b45309; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
   /* TABS */
   .tabs {
@@ -877,10 +915,17 @@
         <div class="brand-mark">B</div>
         <div>
           <div class="brand-title">Meine Bibliothek</div>
-          <div class="brand-sub" id="brand-sub">0 Bücher</div>
+          <div class="brand-sub">
+            <span id="brand-sub">0 Bücher</span>
+            <span class="version" id="version"></span>
+          </div>
         </div>
       </div>
       <div class="header-actions">
+        <button class="sync-pill" id="sync-pill" title="Cloud-Sync">
+          <span class="dot-s"></span>
+          <span id="sync-label">Lokal</span>
+        </button>
         <button class="btn" id="btn-import" title="Import">↑ Import</button>
         <button class="btn" id="btn-export" title="Export">↓ Export</button>
         <button class="btn btn-primary" id="btn-add">＋ Buch hinzufügen</button>
@@ -1115,6 +1160,40 @@
   </div>
 </div>
 
+<!-- SYNC CONFIG MODAL -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Cloud-Sync (JSONBin)</div>
+      <button class="btn btn-ghost btn-icon" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field full">
+          <label>Bin ID</label>
+          <input type="text" id="sync-bin-id" placeholder="z. B. 65a1f2b3c4d5e6f7g8h9i0j1">
+        </div>
+        <div class="form-field full">
+          <label>Master Key</label>
+          <input type="password" id="sync-master-key" placeholder="$2a$10$…">
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
+        Bin ID + Master Key bekommst du in deinem JSONBin-Account. Beide Werte werden lokal auf diesem Gerät gespeichert, damit du nicht jedes Mal neu tippen musst. Trenne die Verbindung, wenn du das Gerät weitergibst.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="footer-left">
+        <button class="btn" id="sync-forget" style="color:var(--red);border-color:var(--red);display:none">Trennen</button>
+      </div>
+      <div class="footer-right">
+        <button class="btn" data-close>Abbrechen</button>
+        <button class="btn btn-primary" id="sync-connect">Verbinden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PICKER MODAL (Buch für Platz wählen) -->
 <div class="modal-overlay" id="modal-picker">
   <div class="modal" style="max-width:520px">
@@ -1134,14 +1213,126 @@
 <div class="toast" id="toast"></div>
 
 <script>
+const VERSION = 'v1.0.0';
+
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
 const NEXT_KEY = 'bibliothek.next.v1';
+const BIN_KEY = 'bibliothek.binId';
+const MASTER_KEY = 'bibliothek.masterKey';
 let books = JSON.parse(localStorage.getItem(KEY) || '[]');
 // "Als Nächstes lesen" – array of up to 3 book ids, index 0 = Platz 1
 let nextUp = JSON.parse(localStorage.getItem(NEXT_KEY) || '[]');
-const save = () => localStorage.setItem(KEY, JSON.stringify(books));
-const saveNext = () => localStorage.setItem(NEXT_KEY, JSON.stringify(nextUp));
+
+let sync = {
+  binId: localStorage.getItem(BIN_KEY) || '',
+  masterKey: localStorage.getItem(MASTER_KEY) || '',
+  status: 'local',
+  pushTimer: null
+};
+
+function saveLocal() {
+  localStorage.setItem(KEY, JSON.stringify(books));
+  localStorage.setItem(NEXT_KEY, JSON.stringify(nextUp));
+}
+const save = () => { saveLocal(); schedulePush(); };
+const saveNext = () => { saveLocal(); schedulePush(); };
+
+/* ============ CLOUD SYNC ============ */
+function setSyncStatus(status, label) {
+  sync.status = status;
+  const pill = document.getElementById('sync-pill');
+  if (!pill) return;
+  pill.className = 'sync-pill ' + (status === 'local' ? '' : status);
+  document.getElementById('sync-label').textContent = label;
+}
+
+async function pullRemote() {
+  if (!sync.binId || !sync.masterKey) return;
+  setSyncStatus('syncing', 'Lade …');
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${sync.binId}/latest`, {
+      headers: { 'X-Master-Key': sync.masterKey }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const rec = data.record || {};
+    const remoteBooks = Array.isArray(rec.books) ? rec.books : [];
+    const remoteNext = Array.isArray(rec.nextUp) ? rec.nextUp : [];
+
+    // First-time connect: if cloud empty but local has data, push local up
+    if (remoteBooks.length === 0 && remoteNext.length === 0 && (books.length > 0 || nextUp.length > 0)) {
+      setSyncStatus('connected', 'Synchron');
+      await pushRemote();
+      return;
+    }
+
+    books = remoteBooks;
+    nextUp = remoteNext;
+    saveLocal();
+    render();
+    setSyncStatus('connected', 'Synchron');
+  } catch (e) {
+    console.error('Pull failed:', e);
+    setSyncStatus('error', 'Fehler');
+  }
+}
+
+async function pushRemote() {
+  if (!sync.binId || !sync.masterKey) return;
+  setSyncStatus('syncing', 'Speichere …');
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${sync.binId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': sync.masterKey
+      },
+      body: JSON.stringify({ books, nextUp })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    setSyncStatus('connected', 'Synchron');
+  } catch (e) {
+    console.error('Push failed:', e);
+    setSyncStatus('error', 'Fehler');
+  }
+}
+
+// Debounce pushes so rapid edits coalesce into one upload
+function schedulePush() {
+  if (!sync.binId || !sync.masterKey) return;
+  clearTimeout(sync.pushTimer);
+  sync.pushTimer = setTimeout(pushRemote, 800);
+}
+
+function openSyncConfig() {
+  $('#sync-bin-id').value = sync.binId;
+  $('#sync-master-key').value = sync.masterKey;
+  $('#sync-forget').style.display = (sync.binId || sync.masterKey) ? 'inline-flex' : 'none';
+  $('#modal-sync').classList.add('open');
+}
+
+function connectSync() {
+  const binId = $('#sync-bin-id').value.trim();
+  const masterKey = $('#sync-master-key').value.trim();
+  if (!binId || !masterKey) { toast('Bin ID und Master Key sind nötig'); return; }
+  sync.binId = binId;
+  sync.masterKey = masterKey;
+  localStorage.setItem(BIN_KEY, binId);
+  localStorage.setItem(MASTER_KEY, masterKey);
+  closeModals();
+  pullRemote();
+}
+
+function forgetSync() {
+  if (!confirm('Cloud-Verbindung trennen? Lokale Bücher bleiben erhalten.')) return;
+  sync.binId = '';
+  sync.masterKey = '';
+  localStorage.removeItem(BIN_KEY);
+  localStorage.removeItem(MASTER_KEY);
+  setSyncStatus('local', 'Lokal');
+  closeModals();
+}
 
 /* ============ STATE ============ */
 let activeStatus = 'all';
@@ -1821,8 +2012,31 @@ $('#import-file').addEventListener('change', e => {
   e.target.value = '';
 });
 
+// Sync pill + config
+$('#sync-pill').addEventListener('click', openSyncConfig);
+$('#sync-connect').addEventListener('click', connectSync);
+$('#sync-forget').addEventListener('click', forgetSync);
+
+// Pull on returning to the app (other device may have updated)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && sync.binId && sync.masterKey
+      && sync.status !== 'syncing') {
+    pullRemote();
+  }
+});
+
 // Initial render
+document.getElementById('version').textContent = VERSION;
 render();
+
+// Initial sync state
+if (sync.binId && sync.masterKey) {
+  pullRemote();
+} else if (sync.binId) {
+  setSyncStatus('keyneeded', 'Key benötigt');
+} else {
+  setSyncStatus('local', 'Lokal');
+}
 
 // PWA: register service worker
 if ('serviceWorker' in navigator) {

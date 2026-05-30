@@ -1,5 +1,5 @@
 // Meine Bibliothek — Service Worker
-const CACHE = 'bibliothek-v2';
+const CACHE = 'bibliothek-v4';
 const ASSETS = [
   './bibliothek.html',
   './manifest.json',
@@ -36,6 +36,7 @@ self.addEventListener('fetch', e => {
       url.includes('openlibrary.org') ||
       url.includes('covers.openlibrary.org') ||
       url.includes('books.google.com') ||
+      url.includes('jsonbin.io') ||
       url.includes('unpkg.com')) {
     return; // let the browser handle it normally (no caching)
   }
