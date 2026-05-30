@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#4f7a3a">
+<meta name="theme-color" content="#15201a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bibliothek">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -14,23 +14,24 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root {
-    --bg: #f6f9f3;
-    --surface: #ffffff;
-    --surface-soft: #e8efde;
-    --border: #d6e0c6;
-    --border-strong: #b5c4a3;
-    --text: #1f2d1b;
-    --muted: #5d6e54;
-    --accent: #4f7a3a;       /* sage / forest */
-    --accent-soft: #dfecc8;
-    --accent-ink: #2d4a1f;
-    --accent2: #b07c2c;      /* warm gold for stars */
-    --green: #15803d;
-    --orange: #c2410c;
-    --purple: #6b21a8;
-    --grey: #57534e;
-    --red: #b91c1c;
-    --shadow: 0 1px 2px rgba(45,74,31,0.04), 0 8px 24px rgba(45,74,31,0.06);
+    --bg: #15201a;
+    --surface: #1f2d25;
+    --surface-soft: #2a3a31;
+    --border: #2c3d33;
+    --border-strong: #41584a;
+    --text: #ede4d0;
+    --muted: #9ba88e;
+    --accent: #c9a86e;           /* warm gold */
+    --accent-soft: rgba(201,168,110,0.12);
+    --accent-ink: #a07f47;       /* darker gold for gradients */
+    --accent2: #c9a86e;          /* gold for stars */
+    --on-accent: #15201a;        /* dark text on gold elements */
+    --green: #4ade80;
+    --orange: #fb923c;
+    --purple: #a78bfa;
+    --grey: #9ca3af;
+    --red: #f87171;
+    --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,14 +45,14 @@
     line-height: 1.5;
   }
 
-  /* subtle paper texture */
+  /* subtle reading-room glow */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(circle at 20% 10%, rgba(79,122,58,0.04), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(176,124,44,0.025), transparent 40%);
+      radial-gradient(circle at 20% 10%, rgba(201,168,110,0.06), transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(150,180,140,0.04), transparent 45%);
     pointer-events: none;
     z-index: 0;
   }
@@ -90,11 +91,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #f6f9f3;
+    color: var(--on-accent);
     font-family: 'Fraunces', serif;
     font-weight: 700;
     font-size: 22px;
-    box-shadow: 0 2px 8px rgba(45,74,31,0.25);
+    box-shadow: 0 2px 8px rgba(201,168,110,0.25);
   }
   .brand-title {
     font-family: 'Fraunces', serif;
@@ -139,7 +140,7 @@
   .btn:hover { background: var(--surface-soft); border-color: var(--accent); }
   .btn-primary {
     background: var(--accent);
-    color: #f6f9f3;
+    color: var(--on-accent);
     border-color: var(--accent);
   }
   .btn-primary:hover {
@@ -178,14 +179,14 @@
     border-radius: 50%;
     background: #9ca3af;
   }
-  .sync-pill.connected { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
-  .sync-pill.connected .dot-s { background: #15803d; }
-  .sync-pill.syncing { color: #c2410c; border-color: #fed7aa; background: #fff7ed; }
-  .sync-pill.syncing .dot-s { background: #c2410c; animation: pulse 1.2s infinite; }
-  .sync-pill.error { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
-  .sync-pill.error .dot-s { background: #b91c1c; }
-  .sync-pill.keyneeded { color: #b45309; border-color: #fde68a; background: #fffbeb; }
-  .sync-pill.keyneeded .dot-s { background: #b45309; }
+  .sync-pill.connected { color: #4ade80; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+  .sync-pill.connected .dot-s { background: #4ade80; }
+  .sync-pill.syncing { color: #fbbf24; border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); }
+  .sync-pill.syncing .dot-s { background: #fbbf24; animation: pulse 1.2s infinite; }
+  .sync-pill.error { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
+  .sync-pill.error .dot-s { background: #f87171; }
+  .sync-pill.keyneeded { color: #fcd34d; border-color: rgba(252,211,77,0.3); background: rgba(252,211,77,0.08); }
+  .sync-pill.keyneeded .dot-s { background: #fcd34d; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
   /* TABS */
@@ -223,13 +224,13 @@
     font-weight: 600;
   }
   .tab.active {
-    color: #f6f9f3;
+    color: var(--on-accent);
     border-color: var(--accent);
     background: var(--accent);
   }
   .tab.active .count {
     background: rgba(255,255,255,0.2);
-    color: #f6f9f3;
+    color: var(--on-accent);
   }
   .tab.active[data-status="reading"] { background: var(--orange); border-color: var(--orange); }
   .tab.active[data-status="read"] { background: var(--green); border-color: var(--green); }
@@ -284,7 +285,7 @@
     height: 20px;
     border-radius: 50%;
     background: var(--accent);
-    color: #f6f9f3;
+    color: var(--on-accent);
     font-size: 11px;
     font-weight: 700;
     display: flex;
@@ -468,7 +469,7 @@
     top: -4px;
     right: -4px;
     background: var(--accent);
-    color: #f6f9f3;
+    color: var(--on-accent);
     font-size: 10px;
     font-weight: 700;
     padding: 1px 5px;
@@ -633,7 +634,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(31,45,27,0.55);
+    background: rgba(0,0,0,0.65);
     backdrop-filter: blur(4px);
     z-index: 100;
     display: none;
@@ -1165,7 +1166,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.2.0';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
