@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#7c2d12">
+<meta name="theme-color" content="#4f7a3a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bibliothek">
@@ -14,23 +14,23 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root {
-    --bg: #faf6f1;
+    --bg: #f6f9f3;
     --surface: #ffffff;
-    --surface-soft: #f3ece2;
-    --border: #e6dcc9;
-    --border-strong: #d4c6ab;
-    --text: #2a1e14;
-    --muted: #7a6a55;
-    --accent: #7c2d12;       /* brick / sepia */
-    --accent-soft: #fde6d3;
-    --accent-ink: #4a1a0a;
-    --accent2: #b45309;      /* amber for secondary */
+    --surface-soft: #e8efde;
+    --border: #d6e0c6;
+    --border-strong: #b5c4a3;
+    --text: #1f2d1b;
+    --muted: #5d6e54;
+    --accent: #4f7a3a;       /* sage / forest */
+    --accent-soft: #dfecc8;
+    --accent-ink: #2d4a1f;
+    --accent2: #b07c2c;      /* warm gold for stars */
     --green: #15803d;
     --orange: #c2410c;
     --purple: #6b21a8;
     --grey: #57534e;
     --red: #b91c1c;
-    --shadow: 0 1px 2px rgba(74,26,10,0.04), 0 8px 24px rgba(74,26,10,0.06);
+    --shadow: 0 1px 2px rgba(45,74,31,0.04), 0 8px 24px rgba(45,74,31,0.06);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,8 +50,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(circle at 20% 10%, rgba(124,45,18,0.025), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(180,83,9,0.025), transparent 40%);
+      radial-gradient(circle at 20% 10%, rgba(79,122,58,0.04), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(176,124,44,0.025), transparent 40%);
     pointer-events: none;
     z-index: 0;
   }
@@ -90,11 +90,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #faf6f1;
+    color: #f6f9f3;
     font-family: 'Fraunces', serif;
     font-weight: 700;
     font-size: 22px;
-    box-shadow: 0 2px 8px rgba(124,45,18,0.25);
+    box-shadow: 0 2px 8px rgba(45,74,31,0.25);
   }
   .brand-title {
     font-family: 'Fraunces', serif;
@@ -139,7 +139,7 @@
   .btn:hover { background: var(--surface-soft); border-color: var(--accent); }
   .btn-primary {
     background: var(--accent);
-    color: #faf6f1;
+    color: #f6f9f3;
     border-color: var(--accent);
   }
   .btn-primary:hover {
@@ -223,13 +223,13 @@
     font-weight: 600;
   }
   .tab.active {
-    color: #faf6f1;
+    color: #f6f9f3;
     border-color: var(--accent);
     background: var(--accent);
   }
   .tab.active .count {
     background: rgba(255,255,255,0.2);
-    color: #faf6f1;
+    color: #f6f9f3;
   }
   .tab.active[data-status="reading"] { background: var(--orange); border-color: var(--orange); }
   .tab.active[data-status="read"] { background: var(--green); border-color: var(--green); }
@@ -284,7 +284,7 @@
     height: 20px;
     border-radius: 50%;
     background: var(--accent);
-    color: #faf6f1;
+    color: #f6f9f3;
     font-size: 11px;
     font-weight: 700;
     display: flex;
@@ -468,7 +468,7 @@
     top: -4px;
     right: -4px;
     background: var(--accent);
-    color: #faf6f1;
+    color: #f6f9f3;
     font-size: 10px;
     font-weight: 700;
     padding: 1px 5px;
@@ -531,41 +531,68 @@
     margin-bottom: 12px;
   }
 
-  /* CARDS GRID */
+  /* BOOK LIST (Hauptansicht) */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    transition: transform 0.15s, box-shadow 0.15s;
-    cursor: pointer;
-  }
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(74,26,10,0.06), 0 12px 32px rgba(74,26,10,0.1);
+    gap: 4px;
   }
 
-  .cover-wrap {
-    aspect-ratio: 2 / 3;
-    background: linear-gradient(135deg, var(--surface-soft) 0%, #e8ddc9 100%);
-    position: relative;
+  .book-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.12s, background 0.12s;
+  }
+  .book-row:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--grey);
+  }
+  .status-dot.s-reading { background: var(--orange); }
+  .status-dot.s-read    { background: var(--green); }
+  .status-dot.s-unread  { background: var(--purple); }
+  .status-dot.s-wishlist { background: var(--grey); }
+  .status-dot.s-dropped { background: var(--red); }
+
+  .book-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .book-title {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .cover-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  .book-meta {
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+
+  /* Cover placeholder still used in detail and next-up tiles */
   .cover-placeholder {
     width: 100%;
     height: 100%;
@@ -576,83 +603,6 @@
     font-family: 'Fraunces', serif;
     font-size: 38px;
     font-weight: 600;
-  }
-  .status-pill {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(4px);
-    color: var(--text);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .status-pill.s-reading { background: var(--orange); color: white; }
-  .status-pill.s-read { background: var(--green); color: white; }
-  .status-pill.s-unread { background: var(--purple); color: white; }
-  .status-pill.s-wishlist { background: var(--grey); color: white; }
-  .status-pill.s-dropped { background: var(--red); color: white; }
-
-  .series-pill {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 6px;
-    backdrop-filter: blur(4px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .card-body {
-    padding: 12px 14px 14px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .card-title {
-    font-family: 'Fraunces', serif;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.25;
-    color: var(--text);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .card-author {
-    font-size: 13px;
-    color: var(--muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .card-meta {
-    margin-top: auto;
-    padding-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .card-meta .dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--border-strong);
   }
   .rating {
     color: var(--accent2);
@@ -683,7 +633,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(42,30,20,0.55);
+    background: rgba(31,45,27,0.55);
     backdrop-filter: blur(4px);
     z-index: 100;
     display: none;
@@ -698,7 +648,7 @@
     border-radius: 14px;
     max-width: 720px;
     width: 100%;
-    box-shadow: 0 24px 80px rgba(74,26,10,0.3);
+    box-shadow: 0 24px 80px rgba(45,74,31,0.3);
     border: 1px solid var(--border);
   }
   .modal-header {
@@ -1044,22 +994,28 @@
           </div>
           <div class="form-field">
             <label>Genre</label>
-            <input type="text" name="genre" list="genre-list">
-            <datalist id="genre-list">
-              <option value="Fantasy">
-              <option value="Science-Fiction">
-              <option value="Krimi">
-              <option value="Thriller">
-              <option value="Roman">
-              <option value="Historischer Roman">
-              <option value="Sachbuch">
-              <option value="Biografie">
-              <option value="Horror">
-              <option value="Jugendbuch">
-              <option value="Kinderbuch">
-              <option value="Comic / Graphic Novel">
-              <option value="Romantik">
-            </datalist>
+            <select name="genre">
+              <option value="">— Wähle —</option>
+              <option>Belletristik</option>
+              <option>Biografie</option>
+              <option>Comic / Graphic Novel</option>
+              <option>Fantasy</option>
+              <option>Historischer Roman</option>
+              <option>Horror</option>
+              <option>Jugendbuch</option>
+              <option>Kinderbuch</option>
+              <option>Klassiker</option>
+              <option>Krimi</option>
+              <option>Lyrik / Gedichte</option>
+              <option>Reisebericht</option>
+              <option>Roman</option>
+              <option>Romantik</option>
+              <option>Sachbuch</option>
+              <option>Science-Fiction</option>
+              <option>Selbsthilfe</option>
+              <option>Thriller</option>
+              <option>Sonstiges</option>
+            </select>
           </div>
           <div class="form-field">
             <label>Reihe</label>
@@ -1075,14 +1031,10 @@
           </div>
           <div class="form-field">
             <label>Sprache</label>
-            <input type="text" name="language" list="lang-list" placeholder="z. B. Deutsch">
-            <datalist id="lang-list">
-              <option value="Deutsch">
-              <option value="Englisch">
-              <option value="Französisch">
-              <option value="Spanisch">
-              <option value="Italienisch">
-            </datalist>
+            <select name="language">
+              <option value="Deutsch" selected>Deutsch</option>
+              <option value="Englisch">Englisch</option>
+            </select>
           </div>
           <div class="form-field">
             <label>Format</label>
@@ -1213,7 +1165,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.1.0';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
@@ -1410,8 +1362,11 @@ async function lookupIsbn(isbn) {
 }
 
 function langName(code) {
-  const map = { de: 'Deutsch', en: 'Englisch', fr: 'Französisch', es: 'Spanisch', it: 'Italienisch' };
-  return map[code] || code || '';
+  if (!code) return '';
+  const c = code.toLowerCase().split('-')[0];
+  if (c === 'de') return 'Deutsch';
+  if (c === 'en') return 'Englisch';
+  return '';   // ignore other languages — user only owns DE/EN books
 }
 
 /* ============ SCANNER ============ */
@@ -1721,7 +1676,7 @@ function render() {
 
   if (list.length === 0) {
     grid.innerHTML = `
-      <div class="empty" style="grid-column:1/-1">
+      <div class="empty">
         <div class="empty-icon">📚</div>
         <div class="empty-title">${books.length === 0 ? 'Noch keine Bücher' : 'Keine Treffer'}</div>
         <div class="empty-text">${books.length === 0 ? 'Füge dein erstes Buch hinzu – per ISBN-Scan oder manuell.' : 'Versuche andere Filter oder Suchbegriffe.'}</div>
@@ -1730,29 +1685,16 @@ function render() {
   }
 
   grid.innerHTML = list.map(b => {
-    const stars = b.rating ? '★'.repeat(b.rating) : '';
-    const pages = b.pages ? `${b.pages} S.` : '';
-    const seriesBadge = b.series
-      ? `<div class="series-pill">${escapeHtml(b.series)}${b.volume ? ' · Bd. ' + escapeHtml(b.volume) : ''}</div>`
-      : '';
-    const cover = b.cover
-      ? `<img src="${escapeAttr(b.cover)}" loading="lazy" onerror="this.style.display='none'">`
-      : `<div class="cover-placeholder">${escapeHtml((b.title || '?')[0].toUpperCase())}</div>`;
+    const metaParts = [b.author, b.genre, b.pages ? `${b.pages} S.` : '']
+      .filter(Boolean)
+      .map(escapeHtml)
+      .join(' · ');
     return `
-      <div class="card" data-id="${b.id}">
-        <div class="cover-wrap">
-          ${cover}
-          <div class="status-pill s-${b.status}">${STATUS_LABEL[b.status] || b.status}</div>
-          ${seriesBadge}
-        </div>
-        <div class="card-body">
-          <div class="card-title">${escapeHtml(b.title)}</div>
-          <div class="card-author">${escapeHtml(b.author)}</div>
-          <div class="card-meta">
-            ${pages ? `<span>${pages}</span>` : ''}
-            ${pages && stars ? '<span class="dot"></span>' : ''}
-            ${stars ? `<span class="rating">${stars}</span>` : ''}
-          </div>
+      <div class="book-row" data-id="${b.id}">
+        <span class="status-dot s-${b.status}" title="${STATUS_LABEL[b.status] || b.status}"></span>
+        <div class="book-main">
+          <div class="book-title">${escapeHtml(b.title)}</div>
+          <div class="book-meta">${metaParts}</div>
         </div>
       </div>`;
   }).join('');
@@ -1952,8 +1894,8 @@ $('#btn-edit-from-detail').addEventListener('click', () => {
 
 // Card click → detail
 $('#grid').addEventListener('click', e => {
-  const card = e.target.closest('.card');
-  if (card) openDetail(card.dataset.id);
+  const row = e.target.closest('.book-row');
+  if (row) openDetail(row.dataset.id);
 });
 
 // Close modals
