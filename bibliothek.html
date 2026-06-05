@@ -582,6 +582,9 @@
   }
   .picker-item .pi-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 14px; line-height: 1.2; }
   .picker-item .pi-author { font-size: 12px; color: var(--muted); }
+  .picker-item .pi-status { color: var(--muted); opacity: 0.85; }
+  .picker-item .pi-status.s-read { color: var(--green); opacity: 0.9; }
+  .picker-item .pi-status.s-reading { color: var(--orange); opacity: 0.9; }
   .picker-empty { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
 
   @media (max-width: 600px) {
@@ -1420,22 +1423,18 @@
 <div class="modal-overlay" id="modal-sync">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <div class="modal-title">Cloud-Sync (JSONBin)</div>
+      <div class="modal-title">Cloud-Sync</div>
       <button class="btn btn-ghost btn-icon" data-close>✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-field full">
-          <label>Bin ID</label>
-          <input type="text" id="sync-bin-id" placeholder="z. B. 65a1f2b3c4d5e6f7g8h9i0j1">
-        </div>
-        <div class="form-field full">
-          <label>Master Key</label>
-          <input type="password" id="sync-master-key" placeholder="$2a$10$…">
+          <label>Worker Secret</label>
+          <input type="password" id="sync-secret" placeholder="Bearer-Token für den KV-Worker">
         </div>
       </div>
       <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
-        Bin ID + Master Key bekommst du in deinem JSONBin-Account. Beide Werte werden lokal auf diesem Gerät gespeichert, damit du nicht jedes Mal neu tippen musst. Trenne die Verbindung, wenn du das Gerät weitergibst.
+        Das Secret wird lokal auf diesem Gerät gespeichert, damit du nicht jedes Mal neu tippen musst. Trenne die Verbindung, wenn du das Gerät weitergibst.
       </p>
     </div>
     <div class="modal-footer">
@@ -1469,20 +1468,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = 'v1.4.0';
+const VERSION = 'v1.5.0';
 
 /* ============ STORAGE ============ */
 const KEY = 'bibliothek.v1';
 const NEXT_KEY = 'bibliothek.next.v1';
-const BIN_KEY = 'bibliothek.binId';
-const MASTER_KEY = 'bibliothek.masterKey';
+const SECRET_KEY = 'bibliothek.workerSecret';
+const WORKER_URL = 'https://kv-store.neuzcore.workers.dev';
+const KV_LIBRARY = WORKER_URL + '/bibliothek/data';
 let books = JSON.parse(localStorage.getItem(KEY) || '[]');
 // "Als Nächstes lesen" – array of up to 3 book ids, index 0 = Platz 1
 let nextUp = JSON.parse(localStorage.getItem(NEXT_KEY) || '[]');
 
 let sync = {
-  binId: localStorage.getItem(BIN_KEY) || '',
-  masterKey: localStorage.getItem(MASTER_KEY) || '',
+  secret: localStorage.getItem(SECRET_KEY) || '',
   status: 'local',
   pushTimer: null
 };
@@ -1509,15 +1508,27 @@ function setSyncStatus(status, label) {
 }
 
 async function pullRemote() {
-  if (!sync.binId || !sync.masterKey) return;
+  if (!sync.secret) return;
   setSyncStatus('syncing', 'Lade …');
   try {
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${sync.binId}/latest`, {
-      headers: { 'X-Master-Key': sync.masterKey }
+    const r = await fetch(KV_LIBRARY, {
+      headers: { 'Authorization': 'Bearer ' + sync.secret }
     });
+
+    // 404 = key doesn't exist yet (fresh KV slot). Treat as empty.
+    if (r.status === 404) {
+      if (books.length > 0 || nextUp.length > 0) {
+        setSyncStatus('connected', 'Synchron');
+        await pushRemote();
+      } else {
+        setSyncStatus('connected', 'Synchron');
+      }
+      return;
+    }
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    const rec = data.record || {};
+
+    // Worker returns the stored object directly (no .record wrapper).
+    const rec = await r.json();
     const remoteBooks = Array.isArray(rec.books) ? rec.books : [];
     const remoteNext = Array.isArray(rec.nextUp) ? rec.nextUp : [];
 
@@ -1540,14 +1551,14 @@ async function pullRemote() {
 }
 
 async function pushRemote() {
-  if (!sync.binId || !sync.masterKey) return;
+  if (!sync.secret) return;
   setSyncStatus('syncing', 'Speichere …');
   try {
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${sync.binId}`, {
+    const r = await fetch(KV_LIBRARY, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Master-Key': sync.masterKey
+        'Authorization': 'Bearer ' + sync.secret
       },
       body: JSON.stringify({ books, nextUp })
     });
@@ -1561,36 +1572,30 @@ async function pushRemote() {
 
 // Debounce pushes so rapid edits coalesce into one upload
 function schedulePush() {
-  if (!sync.binId || !sync.masterKey) return;
+  if (!sync.secret) return;
   clearTimeout(sync.pushTimer);
   sync.pushTimer = setTimeout(pushRemote, 800);
 }
 
 function openSyncConfig() {
-  $('#sync-bin-id').value = sync.binId;
-  $('#sync-master-key').value = sync.masterKey;
-  $('#sync-forget').style.display = (sync.binId || sync.masterKey) ? 'inline-flex' : 'none';
+  $('#sync-secret').value = sync.secret;
+  $('#sync-forget').style.display = sync.secret ? 'inline-flex' : 'none';
   $('#modal-sync').classList.add('open');
 }
 
 function connectSync() {
-  const binId = $('#sync-bin-id').value.trim();
-  const masterKey = $('#sync-master-key').value.trim();
-  if (!binId || !masterKey) { toast('Bin ID und Master Key sind nötig'); return; }
-  sync.binId = binId;
-  sync.masterKey = masterKey;
-  localStorage.setItem(BIN_KEY, binId);
-  localStorage.setItem(MASTER_KEY, masterKey);
+  const secret = $('#sync-secret').value.trim();
+  if (!secret) { toast('Worker Secret ist nötig'); return; }
+  sync.secret = secret;
+  localStorage.setItem(SECRET_KEY, secret);
   closeModals();
   pullRemote();
 }
 
 function forgetSync() {
   if (!confirm('Cloud-Verbindung trennen? Lokale Bücher bleiben erhalten.')) return;
-  sync.binId = '';
-  sync.masterKey = '';
-  localStorage.removeItem(BIN_KEY);
-  localStorage.removeItem(MASTER_KEY);
+  sync.secret = '';
+  localStorage.removeItem(SECRET_KEY);
   setSyncStatus('local', 'Lokal');
   closeModals();
 }
@@ -2125,14 +2130,20 @@ function openPicker(slot) {
 
 function renderPickerList(q) {
   const nq = norm(q);
-  // Choose from books not already in nextUp and not already read
+  // Status order: currently-reading first, then unread, wishlist, dropped, read last
+  const STATUS_ORDER = { reading: 0, unread: 1, wishlist: 2, dropped: 3, read: 4 };
+  // Allow ALL books not already in nextUp (including ones already marked as read)
   const candidates = books
-    .filter(b => !nextUp.includes(b.id) && b.status !== 'read')
+    .filter(b => !nextUp.includes(b.id))
     .filter(b => {
       if (!nq) return true;
       return norm(b.title + ' ' + b.author + ' ' + (b.series || '')).includes(nq);
     })
-    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'de'));
+    .sort((a, b) => {
+      const so = (STATUS_ORDER[a.status] ?? 5) - (STATUS_ORDER[b.status] ?? 5);
+      if (so !== 0) return so;
+      return (a.title || '').localeCompare(b.title || '', 'de');
+    });
 
   const list = $('#picker-list');
   if (candidates.length === 0) {
@@ -2143,12 +2154,18 @@ function renderPickerList(q) {
     const cover = b.cover
       ? `<img class="pi-cover" src="${escapeAttr(b.cover)}" onerror="this.outerHTML='<div class=&quot;pi-ph&quot;>${escapeHtml((b.title||'?')[0].toUpperCase())}</div>'">`
       : `<div class="pi-ph">${escapeHtml((b.title || '?')[0].toUpperCase())}</div>`;
+    const statusLabel = STATUS_LABEL[b.status] || '';
+    const metaParts = [escapeHtml(b.author || '')];
+    if (b.series) metaParts.push(escapeHtml(b.series) + (b.volume ? ' Bd. ' + escapeHtml(b.volume) : ''));
+    if (statusLabel) metaParts.push(`<span class="pi-status s-${b.status}">${escapeHtml(statusLabel)}</span>`);
     return `
       <div class="picker-item" data-pick-id="${b.id}">
         ${cover}
-        <div style="min-width:0">
-          <div class="pi-title">${escapeHtml(b.title)}</div>
-          <div class="pi-author">${escapeHtml(b.author)}${b.series ? ' · ' + escapeHtml(b.series) + (b.volume ? ' Bd. ' + escapeHtml(b.volume) : '') : ''}</div>
+        <div style="min-width:0;flex:1">
+          <div class="pi-title">
+            <span class="status-dot s-${b.status}" style="display:inline-block;margin-right:6px;vertical-align:2px"></span>${escapeHtml(b.title)}
+          </div>
+          <div class="pi-author">${metaParts.filter(Boolean).join(' · ')}</div>
         </div>
       </div>`;
   }).join('');
@@ -2456,7 +2473,7 @@ $('#sync-forget').addEventListener('click', forgetSync);
 
 // Pull on returning to the app (other device may have updated)
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && sync.binId && sync.masterKey
+  if (document.visibilityState === 'visible' && sync.secret
       && sync.status !== 'syncing') {
     pullRemote();
   }
@@ -2467,10 +2484,8 @@ document.getElementById('version').textContent = VERSION;
 render();
 
 // Initial sync state
-if (sync.binId && sync.masterKey) {
+if (sync.secret) {
   pullRemote();
-} else if (sync.binId) {
-  setSyncStatus('keyneeded', 'Key benötigt');
 } else {
   setSyncStatus('local', 'Lokal');
 }
